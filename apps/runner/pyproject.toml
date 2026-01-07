@@ -1,9 +1,15 @@
 [project]
-name = "runner"
+name = "oken-runner"
 version = "0.1.0"
-description = "Add your description here"
+description = "Oken agent runner service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.128.0",
 ]
+
+[tool.uv]
+package = true
+
+[project.scripts]
+oken-runner = "oken_runner.server:app"
