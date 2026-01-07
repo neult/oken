@@ -2,12 +2,45 @@
 
 version: '3'
 
-vars:
-  GREETING: Hello, world!
-
 tasks:
-  default:
-    desc: Print a greeting message
+  dev:cli:
+    desc: Run CLI in dev mode
+    dir: apps/cli
     cmds:
-      - echo "{{.GREETING}}"
-    silent: true
+      - go run .
+
+  dev:platform:
+    desc: Run platform in dev mode
+    dir: apps/platform
+    cmds:
+      - bun run dev
+
+  dev:runner:
+    desc: Run runner in dev mode
+    dir: apps/runner
+    cmds:
+      - uv run fastapi dev src/oken_runner/server.py
+
+  build:cli:
+    desc: Build CLI binary
+    dir: apps/cli
+    cmds:
+      - go build -o oken .
+
+  build:platform:
+    desc: Build platform
+    dir: apps/platform
+    cmds:
+      - bun run build
+
+  db:generate:
+    desc: Generate Drizzle migrations
+    dir: apps/platform
+    cmds:
+      - bunx drizzle-kit generate
+
+  db:migrate:
+    desc: Run Drizzle migrations
+    dir: apps/platform
+    cmds:
+      - bunx drizzle-kit migrate

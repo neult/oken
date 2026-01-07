@@ -1,0 +1,10 @@
+# binaries
+apps/cli/oken
+
+# env
+.env
+.env.local
+
+# ide
+.idea/
+*.swp
