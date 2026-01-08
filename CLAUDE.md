@@ -47,15 +47,18 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 Scopes: `cli`, `platform`, `runner`, or omit for repo-wide changes
 
+Keep messages short and concise. No descriptions or co-author tags.
+
 Examples:
 ```
 feat(cli): add oken logs command
 fix(runner): handle missing requirements.txt
-docs: add CLAUDE.md files
+docs: update claude.md files
 chore: update dependencies
 ```
 
 ## Workflow
 
+- Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 - Run typechecks/lints before committing
 - Test changes in the relevant app before PRs
