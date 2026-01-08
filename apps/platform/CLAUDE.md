@@ -42,15 +42,34 @@ src/
     api/
       agents.ts         # Agent CRUD + deployment
       secrets.ts        # Secret management
-  components/           # React components
+  components/
+    ui/                 # shadcn components (button, card, dialog, etc.)
   lib/
     db/
       index.ts          # Drizzle client
       schema.ts         # Tables: users, agents, secrets, deployments
     auth/               # Better Auth config
     runner/             # HTTP client for Runner service
+    utils.ts            # cn() helper for className merging
 drizzle/                # Migration files
 ```
+
+## UI Components (shadcn)
+
+Uses [shadcn/ui](https://ui.shadcn.com) with new-york style and zinc base color.
+
+```bash
+bunx shadcn@latest add <component>   # Add a component
+```
+
+Components live in `src/components/ui/`. Import like:
+
+```tsx
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+```
+
+Config in `components.json`. Uses Tailwind v4 with CSS variables for theming (light/dark mode supported).
 
 ## How Platform Connects CLI and Runner
 

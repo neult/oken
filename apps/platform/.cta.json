@@ -10,6 +10,7 @@
   "framework": "react-cra",
   "chosenAddOns": [
     "start",
+    "shadcn",
     "nitro"
   ]
 }

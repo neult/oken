@@ -7,6 +7,7 @@ import Header from '../components/Header'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  notFoundComponent: () => <div className="p-8 text-center">Page not found</div>,
   head: () => ({
     meta: [
       {

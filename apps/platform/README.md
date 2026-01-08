@@ -6,7 +6,7 @@ To run this application:
 
 ```bash
 bun install
-bun --bun run start
+bun --bun run dev
 ```
 
 # Building For Production
@@ -29,6 +29,15 @@ bun --bun run test
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
+
+
+## Shadcn
+
+Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+
+```bash
+pnpm dlx shadcn@latest add button
+```
 
 
 
