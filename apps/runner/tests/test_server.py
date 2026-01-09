@@ -215,7 +215,7 @@ class TestDeployEndpoint:
         )
 
         # FastAPI returns 422 for empty form field
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     async def test_deploy_invalid_agent_id_path_traversal(
         self, async_client: AsyncClient
