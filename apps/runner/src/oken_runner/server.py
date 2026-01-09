@@ -132,9 +132,9 @@ async def deploy(
     logger.info(f"Deploying agent {agent_id}: {config.name}")
 
     # Detect entrypoint type if not specified
-    entrypoint_type = config.entrypoint_type
-    if entrypoint_type is None:
-        entrypoint_type = detector.detect(workspace, config.entrypoint)
+    entrypoint_type = config.entrypoint_type or detector.detect(
+        workspace, config.entrypoint
+    )
 
     # Create agent state
     agent = AgentState(
@@ -271,8 +271,7 @@ def _parse_agent_config(workspace: Path) -> AgentConfig:
         raise ConfigError("oken.toml not found in agent tarball")
 
     try:
-        with open(config_path, "rb") as f:
-            data = tomllib.load(f)
+        data = tomllib.loads(config_path.read_text())
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"Invalid oken.toml: {e}") from e
 

@@ -95,11 +95,9 @@ class EntrypointDetector:
 
     def _has_handler_function(self, tree: ast.AST) -> bool:
         """Check for handler or main function at module level."""
+        handler_names = ("handler", "main", "invoke", "run")
         for node in ast.iter_child_nodes(tree):
-            if isinstance(node, ast.FunctionDef):
-                if node.name in ("handler", "main", "invoke", "run"):
-                    return True
-            elif isinstance(node, ast.AsyncFunctionDef):
-                if node.name in ("handler", "main", "invoke", "run"):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name in handler_names:
                     return True
         return False

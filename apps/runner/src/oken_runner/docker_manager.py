@@ -115,7 +115,7 @@ class DockerManager:
 
         try:
             logger.info(f"Building image {image_tag} from {code_path}")
-            image, build_logs = self.client.images.build(
+            self.client.images.build(
                 path=str(code_path),
                 tag=image_tag,
                 rm=True,

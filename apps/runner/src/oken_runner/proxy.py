@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -67,8 +68,6 @@ class AgentProxy:
         """Wait for agent container to be ready."""
         if timeout is None:
             timeout = self.settings.health_check_timeout
-
-        import asyncio
 
         for _ in range(timeout):
             if await self.health_check(container_name):
