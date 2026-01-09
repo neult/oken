@@ -125,6 +125,24 @@ class TestInvokeEndpoint:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["code"] == "AGENT_NOT_RUNNING"
 
+    async def test_invoke_agent_no_container(
+        self, async_client: AsyncClient, sample_agent_state: AgentState
+    ):
+        """Invoke fails when agent has no container."""
+        from oken_runner.server import app
+
+        sample_agent_state.status = "running"
+        sample_agent_state.container_name = None
+        app.state.registry.get = AsyncMock(return_value=sample_agent_state)
+
+        response = await async_client.post(
+            "/invoke/test-agent",
+            json={"input": {}},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "AGENT_NOT_RUNNING"
+
     async def test_invoke_success(
         self, async_client: AsyncClient, sample_agent_state: AgentState
     ):
@@ -145,6 +163,171 @@ class TestInvokeEndpoint:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["output"] == {"result": 42}
         app.state.registry.touch.assert_called_once()
+
+
+class TestDeployEndpoint:
+    """Tests for POST /deploy endpoint."""
+
+    async def test_deploy_invalid_agent_id_empty(self, async_client: AsyncClient):
+        """Deploy fails with empty agent_id (FastAPI validation)."""
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": ""},
+            files={"tarball": ("agent.tar.gz", b"fake", "application/gzip")},
+        )
+
+        # FastAPI returns 422 for empty form field
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    async def test_deploy_invalid_agent_id_path_traversal(
+        self, async_client: AsyncClient
+    ):
+        """Deploy fails with path traversal in agent_id."""
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "../../../etc"},
+            files={"tarball": ("agent.tar.gz", b"fake", "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "CONFIG_ERROR"
+
+    async def test_deploy_invalid_agent_id_too_long(self, async_client: AsyncClient):
+        """Deploy fails with agent_id over 128 chars."""
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "a" * 129},
+            files={"tarball": ("agent.tar.gz", b"fake", "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "CONFIG_ERROR"
+
+    async def test_deploy_malicious_tarball(
+        self, async_client: AsyncClient, malicious_tarball: bytes
+    ):
+        """Deploy fails with path traversal in tarball."""
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", malicious_tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "CONFIG_ERROR"
+
+    async def test_deploy_missing_oken_toml(self, async_client: AsyncClient):
+        """Deploy fails when oken.toml is missing."""
+        tarball = create_tarball({"main.py": "def handler(x): return x"})
+
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "CONFIG_ERROR"
+
+    async def test_deploy_success(
+        self, async_client: AsyncClient, valid_agent_tarball: bytes
+    ):
+        """Successful agent deployment."""
+        from oken_runner.server import app
+
+        app.state.registry.register = AsyncMock()
+        app.state.registry.update_status = AsyncMock()
+        app.state.registry.update_container = AsyncMock()
+        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
+        app.state.docker.start_container = MagicMock(
+            return_value=("container-123", "oken-test-agent")
+        )
+        app.state.proxy.wait_for_ready = AsyncMock(return_value=True)
+
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["agent_id"] == "test-agent"
+        assert data["status"] == "running"
+        assert data["endpoint"] == "/invoke/test-agent"
+
+    async def test_deploy_build_failure(
+        self, async_client: AsyncClient, valid_agent_tarball: bytes
+    ):
+        """Deploy fails when Docker build fails."""
+        from oken_runner.exceptions import BuildError
+        from oken_runner.server import app
+
+        app.state.registry.register = AsyncMock()
+        app.state.registry.update_status = AsyncMock()
+        app.state.docker.build_image = MagicMock(
+            side_effect=BuildError("Build failed", "Error in Dockerfile")
+        )
+
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["code"] == "BUILD_FAILED"
+
+    async def test_deploy_container_start_failure(
+        self, async_client: AsyncClient, valid_agent_tarball: bytes
+    ):
+        """Deploy fails when container fails to start."""
+        from oken_runner.exceptions import ContainerError
+        from oken_runner.server import app
+
+        app.state.registry.register = AsyncMock()
+        app.state.registry.update_status = AsyncMock()
+        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
+        app.state.docker.start_container = MagicMock(
+            side_effect=ContainerError("Failed to start container")
+        )
+        app.state.docker.cleanup_image = MagicMock()
+
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.json()["code"] == "CONTAINER_ERROR"
+
+    async def test_deploy_agent_not_ready(
+        self, async_client: AsyncClient, valid_agent_tarball: bytes
+    ):
+        """Deploy returns error when agent fails health check."""
+        from oken_runner.server import app
+
+        app.state.registry.register = AsyncMock()
+        app.state.registry.update_status = AsyncMock()
+        app.state.registry.update_container = AsyncMock()
+        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
+        app.state.docker.start_container = MagicMock(
+            return_value=("container-123", "oken-test-agent")
+        )
+        app.state.docker.stop_container = MagicMock()
+        app.state.proxy.wait_for_ready = AsyncMock(return_value=False)
+
+        response = await async_client.post(
+            "/deploy",
+            data={"agent_id": "test-agent"},
+            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "error"
+        assert "ready" in data["error"].lower()
 
 
 class TestStopEndpoint:
