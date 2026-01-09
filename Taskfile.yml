@@ -70,3 +70,15 @@ tasks:
       - uv run ruff format src/ --check
       - uv run ruff check src/
       - uv run ty check src/
+
+  test:runner:
+    desc: Run runner tests
+    dir: apps/runner
+    cmds:
+      - uv run pytest
+
+  test:runner:cov:
+    desc: Run runner tests with coverage
+    dir: apps/runner
+    cmds:
+      - uv run pytest --cov=oken_runner --cov-report=term-missing
