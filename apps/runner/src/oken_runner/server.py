@@ -1,4 +1,5 @@
 import logging
+import re
 import tarfile
 import tomllib
 from contextlib import asynccontextmanager
@@ -118,6 +119,9 @@ async def deploy(
     registry: AgentRegistry = app.state.registry
     proxy: AgentProxy = app.state.proxy
     detector: EntrypointDetector = app.state.detector
+
+    # Validate agent_id to prevent path traversal
+    _validate_agent_id(agent_id)
 
     # Extract tarball to workspace
     workspace = Path(settings.data_dir) / "agents" / agent_id
@@ -245,6 +249,22 @@ async def list_agents():
             for a in agents
         ]
     }
+
+
+# Regex pattern for valid agent IDs: alphanumeric, hyphens, underscores only
+_AGENT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_agent_id(agent_id: str) -> None:
+    """Validate agent_id to prevent path traversal attacks."""
+    if not agent_id:
+        raise ConfigError("agent_id cannot be empty")
+    if len(agent_id) > 128:
+        raise ConfigError("agent_id too long (max 128 characters)")
+    if not _AGENT_ID_PATTERN.match(agent_id):
+        raise ConfigError(
+            "agent_id must contain only alphanumeric characters, hyphens, and underscores"
+        )
 
 
 def _safe_extract_tarball(content: bytes, workspace: Path) -> None:
