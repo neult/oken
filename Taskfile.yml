@@ -3,6 +3,7 @@
 version: '3'
 
 tasks:
+  # Development
   dev:cli:
     desc: Run CLI in dev mode
     dir: apps/cli
@@ -21,6 +22,7 @@ tasks:
     cmds:
       - uv run fastapi dev src/oken_runner/server.py
 
+  # Build
   build:cli:
     desc: Build CLI binary
     dir: apps/cli
@@ -33,6 +35,7 @@ tasks:
     cmds:
       - bun run build
 
+  # Database
   db:generate:
     desc: Generate Drizzle migrations
     dir: apps/platform
@@ -44,3 +47,26 @@ tasks:
     dir: apps/platform
     cmds:
       - bunx drizzle-kit migrate
+
+  # Linting and formatting
+  lint:runner:
+    desc: Lint and type-check runner
+    dir: apps/runner
+    cmds:
+      - uv run ruff check src/
+      - uv run ty check src/
+
+  format:runner:
+    desc: Format runner code
+    dir: apps/runner
+    cmds:
+      - uv run ruff format src/
+      - uv run ruff check src/ --fix
+
+  check:runner:
+    desc: Run all checks for runner (lint, type-check, format check)
+    dir: apps/runner
+    cmds:
+      - uv run ruff format src/ --check
+      - uv run ruff check src/
+      - uv run ty check src/
