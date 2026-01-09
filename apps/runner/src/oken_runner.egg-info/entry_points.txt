@@ -1,2 +1,0 @@
-[console_scripts]
-oken-runner = oken_runner.server:app
