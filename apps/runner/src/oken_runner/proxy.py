@@ -1,12 +1,10 @@
 import asyncio
-import logging
 
 import httpx
+from loguru import logger
 
 from .config import Settings
 from .exceptions import InvokeError
-
-logger = logging.getLogger(__name__)
 
 
 class AgentProxy:

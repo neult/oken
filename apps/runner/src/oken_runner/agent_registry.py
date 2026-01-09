@@ -1,12 +1,11 @@
 import asyncio
-import logging
 from datetime import UTC, datetime
+
+from loguru import logger
 
 from .config import Settings
 from .docker_manager import DockerManager
 from .models import AgentState
-
-logger = logging.getLogger(__name__)
 
 
 class AgentRegistry:

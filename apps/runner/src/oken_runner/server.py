@@ -1,4 +1,3 @@
-import logging
 import re
 import tarfile
 import tomllib
@@ -10,6 +9,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from .agent_registry import AgentRegistry
 from .config import Settings
@@ -22,6 +22,9 @@ from .exceptions import (
     InvokeError,
     RunnerError,
 )
+
+# Configure logging
+from .logging import setup_logging
 from .models import (
     AgentConfig,
     AgentState,
@@ -33,8 +36,7 @@ from .models import (
 )
 from .proxy import AgentProxy
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+setup_logging()
 
 
 def get_settings() -> Settings:

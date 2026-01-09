@@ -1,10 +1,9 @@
 import ast
-import logging
 from pathlib import Path
 
-from .models import EntrypointType
+from loguru import logger
 
-logger = logging.getLogger(__name__)
+from .models import EntrypointType
 
 
 class EntrypointDetector:

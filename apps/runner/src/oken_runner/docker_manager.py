@@ -1,15 +1,13 @@
-import logging
 from pathlib import Path
 
 import docker
 from docker.errors import BuildError as DockerBuildError
 from docker.errors import ImageNotFound, NotFound
+from loguru import logger
 
 from .config import Settings
 from .exceptions import BuildError, ContainerError
 from .models import AgentConfig, EntrypointType
-
-logger = logging.getLogger(__name__)
 
 WRAPPER_SCRIPT = """
 import asyncio
