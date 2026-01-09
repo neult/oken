@@ -37,6 +37,8 @@ task db:migrate     # Run migrations
 
 ## Commit Messages
 
+**IMPORTANT:** Follow these rules exactly.
+
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
@@ -47,7 +49,11 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 Scopes: `cli`, `platform`, `runner`, or omit for repo-wide changes
 
-Keep messages short and concise. No descriptions or co-author tags.
+Rules:
+- Keep messages short and concise (single line)
+- No descriptions or body text
+- No co-author tags
+- No trailing periods
 
 Examples:
 ```
