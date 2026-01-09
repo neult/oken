@@ -5,10 +5,11 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pytest_mock import MockerFixture
 
 from oken_runner.agent_registry import AgentRegistry
 from oken_runner.config import Settings
@@ -42,20 +43,20 @@ def test_settings(tmp_path: Path) -> Settings:
 
 
 @pytest.fixture
-def mock_docker_client() -> MagicMock:
+def mock_docker_client(mocker: MockerFixture):
     """Create mock Docker client."""
-    client = MagicMock()
+    client = mocker.MagicMock()
 
     # Mock network operations
-    client.networks.get.return_value = MagicMock(id="network-123")
-    client.networks.create.return_value = MagicMock(id="network-456")
+    client.networks.get.return_value = mocker.MagicMock(id="network-123")
+    client.networks.create.return_value = mocker.MagicMock(id="network-456")
 
     # Mock image operations
-    client.images.build.return_value = (MagicMock(), [])
+    client.images.build.return_value = (mocker.MagicMock(), [])
     client.images.remove.return_value = None
 
     # Mock container operations
-    mock_container = MagicMock()
+    mock_container = mocker.MagicMock()
     mock_container.id = "container-abc123"
     mock_container.short_id = "abc123"
     mock_container.name = "oken-test-agent"
@@ -200,27 +201,6 @@ def handler(input: dict) -> dict:
 
 
 @pytest.fixture
-def agent_tarball_with_requirements() -> bytes:
-    """Create agent tarball with requirements.txt."""
-    return create_tarball(
-        {
-            "oken.toml": """
-[agent]
-name = "deps-agent"
-entrypoint = "main.py"
-""",
-            "main.py": """
-import requests
-
-def handler(input: dict) -> dict:
-    return {"status": "ok"}
-""",
-            "requirements.txt": "requests>=2.28.0\n",
-        }
-    )
-
-
-@pytest.fixture
 def malicious_tarball() -> bytes:
     """Create tarball with path traversal attempt."""
     buffer = BytesIO()
@@ -240,9 +220,18 @@ def malicious_tarball() -> bytes:
 
 
 @pytest.fixture
+def app():
+    """Return the FastAPI app instance for direct state manipulation in tests."""
+    from oken_runner.server import app
+
+    return app
+
+
+@pytest.fixture
 async def async_client(
     test_settings: Settings,
     mock_docker_manager: DockerManager,
+    mocker: MockerFixture,
 ) -> AsyncGenerator[AsyncClient]:
     """Create async test client for FastAPI app."""
     from oken_runner.server import app
@@ -250,252 +239,15 @@ async def async_client(
     # Mock the lifespan dependencies
     app.state.settings = test_settings
     app.state.docker = mock_docker_manager
-    app.state.registry = AsyncMock(spec=AgentRegistry)
-    app.state.proxy = AsyncMock(spec=AgentProxy)
+    app.state.registry = mocker.AsyncMock(spec=AgentRegistry)
+    app.state.proxy = mocker.AsyncMock(spec=AgentProxy)
     app.state.detector = EntrypointDetector()
 
     # Set up default mock returns
-    app.state.registry.count_running = AsyncMock(return_value=0)
-    app.state.registry.list_agents = AsyncMock(return_value=[])
+    app.state.registry.count_running = mocker.AsyncMock(return_value=0)
+    app.state.registry.list_agents = mocker.AsyncMock(return_value=[])
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         yield client
-
-
-# ============================================================================
-# Example Agent Code Snippets
-# ============================================================================
-
-HANDLER_SIMPLE = """
-def handler(input: dict) -> dict:
-    \"\"\"Simple synchronous handler.\"\"\"
-    name = input.get("name", "World")
-    return {"greeting": f"Hello, {name}!"}
-"""
-
-HANDLER_ASYNC = """
-import asyncio
-
-async def handler(input: dict) -> dict:
-    \"\"\"Async handler with await.\"\"\"
-    await asyncio.sleep(0.1)
-    return {"result": input.get("value", 0) * 2}
-"""
-
-HANDLER_MAIN = """
-def main(input: dict) -> dict:
-    \"\"\"Handler using main() instead of handler().\"\"\"
-    return {"processed": True, "data": input}
-"""
-
-HANDLER_INVOKE = """
-def invoke(input: dict) -> dict:
-    \"\"\"Handler using invoke() function.\"\"\"
-    return {"invoked": True}
-"""
-
-HANDLER_RUN = """
-def run(input: dict) -> dict:
-    \"\"\"Handler using run() function.\"\"\"
-    return {"ran": True}
-"""
-
-AGENT_CLASS_SIMPLE = """
-class Agent:
-    \"\"\"Simple agent class.\"\"\"
-
-    def __init__(self):
-        self.counter = 0
-
-    def run(self, input: dict) -> dict:
-        self.counter += 1
-        return {"count": self.counter, "input": input}
-"""
-
-AGENT_CLASS_WITH_SETUP = """
-class MyAgent:
-    \"\"\"Agent with setup method.\"\"\"
-
-    def setup(self):
-        self.model = "initialized"
-
-    def run(self, input: dict) -> dict:
-        return {"model": self.model, "query": input.get("query")}
-"""
-
-AGENT_CLASS_ASYNC = """
-class AsyncAgent:
-    \"\"\"Agent with async run method.\"\"\"
-
-    async def run(self, input: dict) -> dict:
-        import asyncio
-        await asyncio.sleep(0.01)
-        return {"async": True}
-"""
-
-AGENT_CLASS_INVOKE = """
-class TaskAgent:
-    \"\"\"Agent with invoke method.\"\"\"
-
-    def invoke(self, input: dict) -> dict:
-        return {"invoked": True}
-"""
-
-AGENT_CLASS_CALL = """
-class CallableAgent:
-    \"\"\"Agent with __call__ method.\"\"\"
-
-    def __call__(self, input: dict) -> dict:
-        return {"called": True}
-"""
-
-HTTP_FASTAPI = """
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-@app.post("/invoke")
-async def invoke(request: dict):
-    return {"output": request.get("input", {})}
-"""
-
-HTTP_FLASK = """
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
-
-@app.route("/health")
-def health():
-    return jsonify({"status": "ok"})
-
-@app.route("/invoke", methods=["POST"])
-def invoke():
-    data = request.get_json()
-    return jsonify({"output": data.get("input", {})})
-"""
-
-HTTP_STARLETTE = """
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.routing import Route
-
-async def health(request):
-    return JSONResponse({"status": "ok"})
-
-app = Starlette(routes=[Route("/health", health)])
-"""
-
-HTTP_UVICORN_RUN = """
-import uvicorn
-from fastapi import FastAPI
-
-app = FastAPI()
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
-"""
-
-LANGCHAIN_AGENT = """
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_openai import ChatOpenAI
-
-class LangChainAgent:
-    \"\"\"LangChain-based agent.\"\"\"
-
-    def __init__(self):
-        self.llm = ChatOpenAI()
-
-    def run(self, input: dict) -> dict:
-        query = input.get("query", "")
-        return {"response": f"Processed: {query}"}
-"""
-
-CREWAI_CREW = """
-from crewai import Agent, Crew, Task
-
-class CrewAIAgent:
-    \"\"\"CrewAI-based agent.\"\"\"
-
-    def setup(self):
-        self.researcher = Agent(
-            role="Researcher",
-            goal="Research topics",
-            backstory="Expert researcher"
-        )
-        self.crew = Crew(agents=[self.researcher], tasks=[])
-
-    def run(self, input: dict) -> dict:
-        task = Task(description=input.get("task", ""))
-        result = self.crew.kickoff()
-        return {"result": str(result)}
-"""
-
-INVALID_SYNTAX = """
-def handler(input: dict) -> dict:
-    return {"broken"  # Missing closing brace
-"""
-
-NO_HANDLER = """
-# This file has no handler, main, or Agent class
-def helper_function():
-    return "helper"
-
-class NotAnAgent:
-    def process(self):
-        pass
-"""
-
-MIXED_HANDLER_AND_AGENT = """
-def handler(input: dict) -> dict:
-    return {"from": "handler"}
-
-class Agent:
-    def run(self, input: dict) -> dict:
-        return {"from": "agent"}
-"""
-
-MIXED_HTTP_AND_HANDLER = """
-from fastapi import FastAPI
-
-app = FastAPI()
-
-def handler(input: dict) -> dict:
-    return {"from": "handler"}
-
-@app.post("/invoke")
-async def invoke(request: dict):
-    return {"from": "http"}
-"""
-
-
-@pytest.fixture
-def agent_code_samples() -> dict[str, str]:
-    """Return all agent code samples."""
-    return {
-        "handler_simple": HANDLER_SIMPLE,
-        "handler_async": HANDLER_ASYNC,
-        "handler_main": HANDLER_MAIN,
-        "handler_invoke": HANDLER_INVOKE,
-        "handler_run": HANDLER_RUN,
-        "agent_class_simple": AGENT_CLASS_SIMPLE,
-        "agent_class_with_setup": AGENT_CLASS_WITH_SETUP,
-        "agent_class_async": AGENT_CLASS_ASYNC,
-        "agent_class_invoke": AGENT_CLASS_INVOKE,
-        "agent_class_call": AGENT_CLASS_CALL,
-        "http_fastapi": HTTP_FASTAPI,
-        "http_flask": HTTP_FLASK,
-        "http_starlette": HTTP_STARLETTE,
-        "http_uvicorn_run": HTTP_UVICORN_RUN,
-        "langchain_agent": LANGCHAIN_AGENT,
-        "crewai_crew": CREWAI_CREW,
-        "invalid_syntax": INVALID_SYNTAX,
-        "no_handler": NO_HANDLER,
-        "mixed_handler_and_agent": MIXED_HANDLER_AND_AGENT,
-        "mixed_http_and_handler": MIXED_HTTP_AND_HANDLER,
-    }

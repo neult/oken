@@ -3,11 +3,11 @@
 import tarfile
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import status
+from fastapi import FastAPI, status
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from oken_runner.exceptions import ConfigError
 from oken_runner.models import AgentState, EntrypointType
@@ -34,11 +34,11 @@ def create_tarball(files: dict[str, str]) -> bytes:
 class TestHealthEndpoint:
     """Tests for GET /health endpoint."""
 
-    async def test_health_returns_ok(self, async_client: AsyncClient):
+    async def test_health_returns_ok(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Health endpoint returns status ok."""
-        from oken_runner.server import app
-
-        app.state.registry.count_running = AsyncMock(return_value=5)
+        app.state.registry.count_running = mocker.AsyncMock(return_value=5)
 
         response = await async_client.get("/health")
 
@@ -47,11 +47,11 @@ class TestHealthEndpoint:
         assert data["status"] == "ok"
         assert data["agents_running"] == 5
 
-    async def test_health_with_zero_agents(self, async_client: AsyncClient):
+    async def test_health_with_zero_agents(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Health endpoint works with no running agents."""
-        from oken_runner.server import app
-
-        app.state.registry.count_running = AsyncMock(return_value=0)
+        app.state.registry.count_running = mocker.AsyncMock(return_value=0)
 
         response = await async_client.get("/health")
 
@@ -62,11 +62,11 @@ class TestHealthEndpoint:
 class TestListAgentsEndpoint:
     """Tests for GET /agents endpoint."""
 
-    async def test_list_agents_empty(self, async_client: AsyncClient):
+    async def test_list_agents_empty(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """List agents returns empty list."""
-        from oken_runner.server import app
-
-        app.state.registry.list_agents = AsyncMock(return_value=[])
+        app.state.registry.list_agents = mocker.AsyncMock(return_value=[])
 
         response = await async_client.get("/agents")
 
@@ -74,12 +74,16 @@ class TestListAgentsEndpoint:
         assert response.json()["agents"] == []
 
     async def test_list_agents_with_agents(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """List agents returns agent details."""
-        from oken_runner.server import app
-
-        app.state.registry.list_agents = AsyncMock(return_value=[sample_agent_state])
+        app.state.registry.list_agents = mocker.AsyncMock(
+            return_value=[sample_agent_state]
+        )
 
         response = await async_client.get("/agents")
 
@@ -94,11 +98,11 @@ class TestListAgentsEndpoint:
 class TestInvokeEndpoint:
     """Tests for POST /invoke/{agent_id} endpoint."""
 
-    async def test_invoke_agent_not_found(self, async_client: AsyncClient):
+    async def test_invoke_agent_not_found(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Invoke fails when agent doesn't exist."""
-        from oken_runner.server import app
-
-        app.state.registry.get = AsyncMock(return_value=None)
+        app.state.registry.get = mocker.AsyncMock(return_value=None)
 
         response = await async_client.post(
             "/invoke/nonexistent",
@@ -109,13 +113,15 @@ class TestInvokeEndpoint:
         assert response.json()["code"] == "AGENT_NOT_FOUND"
 
     async def test_invoke_agent_not_running(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """Invoke fails when agent is not running."""
-        from oken_runner.server import app
-
         sample_agent_state.status = "building"
-        app.state.registry.get = AsyncMock(return_value=sample_agent_state)
+        app.state.registry.get = mocker.AsyncMock(return_value=sample_agent_state)
 
         response = await async_client.post(
             "/invoke/test-agent",
@@ -126,14 +132,16 @@ class TestInvokeEndpoint:
         assert response.json()["code"] == "AGENT_NOT_RUNNING"
 
     async def test_invoke_agent_no_container(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """Invoke fails when agent has no container."""
-        from oken_runner.server import app
-
         sample_agent_state.status = "running"
         sample_agent_state.container_name = None
-        app.state.registry.get = AsyncMock(return_value=sample_agent_state)
+        app.state.registry.get = mocker.AsyncMock(return_value=sample_agent_state)
 
         response = await async_client.post(
             "/invoke/test-agent",
@@ -144,16 +152,20 @@ class TestInvokeEndpoint:
         assert response.json()["code"] == "AGENT_NOT_RUNNING"
 
     async def test_invoke_success(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """Successful agent invocation."""
-        from oken_runner.server import app
-
         sample_agent_state.status = "running"
         sample_agent_state.container_name = "oken-test-agent"
-        app.state.registry.get = AsyncMock(return_value=sample_agent_state)
-        app.state.registry.touch = AsyncMock()
-        app.state.proxy.invoke = AsyncMock(return_value={"output": {"result": 42}})
+        app.state.registry.get = mocker.AsyncMock(return_value=sample_agent_state)
+        app.state.registry.touch = mocker.AsyncMock()
+        app.state.proxy.invoke = mocker.AsyncMock(
+            return_value={"output": {"result": 42}}
+        )
 
         response = await async_client.post(
             "/invoke/test-agent",
@@ -165,17 +177,20 @@ class TestInvokeEndpoint:
         app.state.registry.touch.assert_called_once()
 
     async def test_invoke_error_uses_status_code(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """InvokeError uses its status_code in response."""
         from oken_runner.exceptions import InvokeError
-        from oken_runner.server import app
 
         sample_agent_state.status = "running"
         sample_agent_state.container_name = "oken-test-agent"
-        app.state.registry.get = AsyncMock(return_value=sample_agent_state)
-        app.state.registry.touch = AsyncMock()
-        app.state.proxy.invoke = AsyncMock(
+        app.state.registry.get = mocker.AsyncMock(return_value=sample_agent_state)
+        app.state.registry.touch = mocker.AsyncMock()
+        app.state.proxy.invoke = mocker.AsyncMock(
             side_effect=InvokeError("Agent returned error", status_code=503)
         )
 
@@ -253,24 +268,30 @@ class TestDeployEndpoint:
         assert response.json()["code"] == "CONFIG_ERROR"
 
     async def test_deploy_success(
-        self, async_client: AsyncClient, valid_agent_tarball: bytes
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        valid_agent_tarball: bytes,
     ):
         """Successful agent deployment."""
-        from oken_runner.server import app
-
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.registry.update_container = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.registry.update_container = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:test-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             return_value=("container-123", "oken-test-agent")
         )
-        app.state.proxy.wait_for_ready = AsyncMock(return_value=True)
+        app.state.proxy.wait_for_ready = mocker.AsyncMock(return_value=True)
 
         response = await async_client.post(
             "/deploy",
             data={"agent_id": "test-agent"},
-            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+            files={
+                "tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -280,71 +301,89 @@ class TestDeployEndpoint:
         assert data["endpoint"] == "/invoke/test-agent"
 
     async def test_deploy_build_failure(
-        self, async_client: AsyncClient, valid_agent_tarball: bytes
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        valid_agent_tarball: bytes,
     ):
         """Deploy fails when Docker build fails."""
         from oken_runner.exceptions import BuildError
-        from oken_runner.server import app
 
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.docker.build_image = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
             side_effect=BuildError("Build failed", "Error in Dockerfile")
         )
 
         response = await async_client.post(
             "/deploy",
             data={"agent_id": "test-agent"},
-            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+            files={
+                "tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")
+            },
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["code"] == "BUILD_FAILED"
 
     async def test_deploy_container_start_failure(
-        self, async_client: AsyncClient, valid_agent_tarball: bytes
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        valid_agent_tarball: bytes,
     ):
         """Deploy fails when container fails to start."""
         from oken_runner.exceptions import ContainerError
-        from oken_runner.server import app
 
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:test-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             side_effect=ContainerError("Failed to start container")
         )
-        app.state.docker.cleanup_image = MagicMock()
+        app.state.docker.cleanup_image = mocker.MagicMock()
 
         response = await async_client.post(
             "/deploy",
             data={"agent_id": "test-agent"},
-            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+            files={
+                "tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")
+            },
         )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.json()["code"] == "CONTAINER_ERROR"
 
     async def test_deploy_agent_not_ready(
-        self, async_client: AsyncClient, valid_agent_tarball: bytes
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        valid_agent_tarball: bytes,
     ):
         """Deploy returns error when agent fails health check."""
-        from oken_runner.server import app
-
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.registry.update_container = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:test-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.registry.update_container = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:test-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             return_value=("container-123", "oken-test-agent")
         )
-        app.state.docker.stop_container = MagicMock()
-        app.state.proxy.wait_for_ready = AsyncMock(return_value=False)
+        app.state.docker.stop_container = mocker.MagicMock()
+        app.state.proxy.wait_for_ready = mocker.AsyncMock(return_value=False)
 
         response = await async_client.post(
             "/deploy",
             data={"agent_id": "test-agent"},
-            files={"tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")},
+            files={
+                "tarball": ("agent.tar.gz", valid_agent_tarball, "application/gzip")
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -352,10 +391,10 @@ class TestDeployEndpoint:
         assert data["status"] == "error"
         assert "ready" in data["error"].lower()
 
-    async def test_deploy_langchain_agent(self, async_client: AsyncClient):
+    async def test_deploy_langchain_agent(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Deploy LangChain-based agent with class detection."""
-        from oken_runner.server import app
-
         langchain_code = '''
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_openai import ChatOpenAI
@@ -370,19 +409,23 @@ class LangChainAgent:
         query = input.get("query", "")
         return {"response": f"Processed: {query}"}
 '''
-        tarball = create_tarball({
-            "oken.toml": '[agent]\nname = "langchain-agent"\nentrypoint = "agent.py"',
-            "agent.py": langchain_code,
-        })
+        tarball = create_tarball(
+            {
+                "oken.toml": '[agent]\nname = "langchain-agent"\nentrypoint = "agent.py"',
+                "agent.py": langchain_code,
+            }
+        )
 
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.registry.update_container = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:lc-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.registry.update_container = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:lc-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             return_value=("container-lc", "oken-lc-agent")
         )
-        app.state.proxy.wait_for_ready = AsyncMock(return_value=True)
+        app.state.proxy.wait_for_ready = mocker.AsyncMock(return_value=True)
 
         response = await async_client.post(
             "/deploy",
@@ -393,10 +436,10 @@ class LangChainAgent:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "running"
 
-    async def test_deploy_crewai_agent(self, async_client: AsyncClient):
+    async def test_deploy_crewai_agent(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Deploy CrewAI-based agent with class detection."""
-        from oken_runner.server import app
-
         crewai_code = '''
 from crewai import Agent, Crew, Task
 
@@ -416,19 +459,23 @@ class CrewAIAgent:
         result = self.crew.kickoff()
         return {"result": str(result)}
 '''
-        tarball = create_tarball({
-            "oken.toml": '[agent]\nname = "crewai-agent"\nentrypoint = "crew.py"',
-            "crew.py": crewai_code,
-        })
+        tarball = create_tarball(
+            {
+                "oken.toml": '[agent]\nname = "crewai-agent"\nentrypoint = "crew.py"',
+                "crew.py": crewai_code,
+            }
+        )
 
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.registry.update_container = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:crew-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.registry.update_container = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:crew-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             return_value=("container-crew", "oken-crew-agent")
         )
-        app.state.proxy.wait_for_ready = AsyncMock(return_value=True)
+        app.state.proxy.wait_for_ready = mocker.AsyncMock(return_value=True)
 
         response = await async_client.post(
             "/deploy",
@@ -439,11 +486,11 @@ class CrewAIAgent:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "running"
 
-    async def test_deploy_fastapi_http_server(self, async_client: AsyncClient):
+    async def test_deploy_fastapi_http_server(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Deploy FastAPI HTTP server agent."""
-        from oken_runner.server import app
-
-        fastapi_code = '''
+        fastapi_code = """
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -455,20 +502,24 @@ async def health():
 @app.post("/invoke")
 async def invoke(request: dict):
     return {"output": request.get("input", {})}
-'''
-        tarball = create_tarball({
-            "oken.toml": '[agent]\nname = "http-agent"\nentrypoint = "server.py"',
-            "server.py": fastapi_code,
-        })
+"""
+        tarball = create_tarball(
+            {
+                "oken.toml": '[agent]\nname = "http-agent"\nentrypoint = "server.py"',
+                "server.py": fastapi_code,
+            }
+        )
 
-        app.state.registry.register = AsyncMock()
-        app.state.registry.update_status = AsyncMock()
-        app.state.registry.update_container = AsyncMock()
-        app.state.docker.build_image = MagicMock(return_value="oken-agent:http-agent")
-        app.state.docker.start_container = MagicMock(
+        app.state.registry.register = mocker.AsyncMock()
+        app.state.registry.update_status = mocker.AsyncMock()
+        app.state.registry.update_container = mocker.AsyncMock()
+        app.state.docker.build_image = mocker.MagicMock(
+            return_value="oken-agent:http-agent"
+        )
+        app.state.docker.start_container = mocker.MagicMock(
             return_value=("container-http", "oken-http-agent")
         )
-        app.state.proxy.wait_for_ready = AsyncMock(return_value=True)
+        app.state.proxy.wait_for_ready = mocker.AsyncMock(return_value=True)
 
         response = await async_client.post(
             "/deploy",
@@ -483,25 +534,29 @@ async def invoke(request: dict):
 class TestStopEndpoint:
     """Tests for POST /stop/{agent_id} endpoint."""
 
-    async def test_stop_agent_not_found(self, async_client: AsyncClient):
+    async def test_stop_agent_not_found(
+        self, async_client: AsyncClient, app: FastAPI, mocker: MockerFixture
+    ):
         """Stop fails when agent doesn't exist."""
-        from oken_runner.server import app
-
-        app.state.registry.unregister = AsyncMock(return_value=None)
+        app.state.registry.unregister = mocker.AsyncMock(return_value=None)
 
         response = await async_client.post("/stop/nonexistent")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     async def test_stop_success(
-        self, async_client: AsyncClient, sample_agent_state: AgentState
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        mocker: MockerFixture,
+        sample_agent_state: AgentState,
     ):
         """Successful agent stop."""
-        from oken_runner.server import app
-
-        app.state.registry.unregister = AsyncMock(return_value=sample_agent_state)
-        app.state.docker.stop_container = MagicMock()
-        app.state.docker.cleanup_image = MagicMock()
+        app.state.registry.unregister = mocker.AsyncMock(
+            return_value=sample_agent_state
+        )
+        app.state.docker.stop_container = mocker.MagicMock()
+        app.state.docker.cleanup_image = mocker.MagicMock()
 
         response = await async_client.post(f"/stop/{sample_agent_state.agent_id}")
 
