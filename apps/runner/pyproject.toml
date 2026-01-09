@@ -6,10 +6,29 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.128.0",
+    "docker>=7.1.0",
+    "pydantic-settings>=2.12.0",
+    "httpx>=0.28.1",
 ]
 
 [tool.uv]
 package = true
+dev-dependencies = [
+    "ruff>=0.9.0",
+    "ty>=0.0.1a7",
+    "pytest>=8.0.0",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
 
 [project.scripts]
 oken-runner = "oken_runner.server:app"
