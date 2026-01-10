@@ -2,7 +2,10 @@
 
 from pathlib import Path
 
+import pytest
+
 from oken_runner.entrypoint_detector import EntrypointDetector
+from oken_runner.exceptions import ConfigError
 from oken_runner.models import EntrypointType
 
 # Agent code samples for testing
@@ -258,15 +261,10 @@ class TestAgentClassDetection:
     def test_detect_agent_class_async(
         self, entrypoint_detector: EntrypointDetector, code_workspace: Path
     ):
-        """Async run() method in Agent class - currently defaults to handler.
-
-        Note: The current implementation only checks for sync FunctionDef,
-        not AsyncFunctionDef in agent classes. This is a known limitation.
-        """
+        """Detects Agent class with async run() method."""
         (code_workspace / "main.py").write_text(AGENT_CLASS_ASYNC)
         result = entrypoint_detector.detect(code_workspace, "main.py")
-        # Current behavior: async methods in agent classes are not detected
-        assert result == EntrypointType.HANDLER
+        assert result == EntrypointType.AGENT_CLASS
 
     def test_detect_agent_class_invoke(
         self, entrypoint_detector: EntrypointDetector, code_workspace: Path
@@ -376,12 +374,12 @@ class TestEdgeCases:
         result = entrypoint_detector.detect(code_workspace, "main.py")
         assert result == EntrypointType.HANDLER
 
-    def test_missing_file_defaults_to_handler(
+    def test_missing_file_raises_error(
         self, entrypoint_detector: EntrypointDetector, code_workspace: Path
     ):
-        """Missing entrypoint file defaults to handler type."""
-        result = entrypoint_detector.detect(code_workspace, "nonexistent.py")
-        assert result == EntrypointType.HANDLER
+        """Missing entrypoint file raises ConfigError."""
+        with pytest.raises(ConfigError, match="Entrypoint file not found"):
+            entrypoint_detector.detect(code_workspace, "nonexistent.py")
 
     def test_empty_file_defaults_to_handler(
         self, entrypoint_detector: EntrypointDetector, code_workspace: Path

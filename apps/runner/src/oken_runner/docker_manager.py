@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import docker
+from docker.errors import APIError, ImageNotFound, NotFound
 from docker.errors import BuildError as DockerBuildError
-from docker.errors import ImageNotFound, NotFound
 from loguru import logger
 
 from .config import Settings
@@ -217,13 +217,14 @@ EXPOSE {self.settings.container_port}
         except NotFound:
             logger.warning(f"Container not found: {container_id}")
 
-    def get_container_logs(self, container_id: str, tail: int = 100) -> str:
+    def get_container_logs(self, container_id: str, tail: int = 100) -> str | None:
         """Get container logs."""
         try:
             container = self.client.containers.get(container_id)
             return container.logs(tail=tail).decode("utf-8")
         except NotFound:
-            return ""
+            logger.warning(f"Container not found for logs: {container_id}")
+            return None
 
     def cleanup_image(self, image_tag: str) -> None:
         """Remove image."""
@@ -244,6 +245,8 @@ EXPOSE {self.settings.container_port}
                 container.remove(force=True)
                 count += 1
                 logger.info(f"Cleaned up orphaned container: {container.name}")
-            except Exception as e:
+            except NotFound:
+                logger.debug(f"Container already removed: {container.name}")
+            except APIError as e:
                 logger.warning(f"Failed to cleanup container {container.name}: {e}")
         return count

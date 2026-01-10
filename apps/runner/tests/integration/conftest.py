@@ -8,7 +8,7 @@ from pathlib import Path
 import docker
 import httpx
 import pytest
-from docker.errors import NotFound
+from docker.errors import APIError, ImageNotFound, NotFound
 from httpx import ASGITransport, AsyncClient
 from loguru import logger
 
@@ -37,9 +37,11 @@ def _docker_available() -> bool:
         return False
 
 
-# Fail fast if Docker is not available
-if not _docker_available():
-    pytest.exit("Docker is not available. Integration tests require Docker.", 1)
+@pytest.fixture(scope="session", autouse=True)
+def require_docker():
+    """Skip all integration tests if Docker is not available."""
+    if not _docker_available():
+        pytest.skip("Docker is not available")
 
 
 class PortMappingDockerManager(DockerManager):
@@ -165,7 +167,8 @@ class PortMappingAgentProxy(AgentProxy):
         try:
             response = await self._client.get(url, timeout=5.0)
             return response.status_code == 200
-        except httpx.RequestError:
+        except httpx.RequestError as e:
+            logger.debug(f"Health check failed: {e}")
             return False
 
     async def wait_for_ready(
@@ -203,7 +206,7 @@ def cleanup_test_resources(docker_client):
         for container in containers:
             try:
                 container.remove(force=True)
-            except Exception:
+            except (APIError, NotFound):
                 pass
 
         # Remove images with test label
@@ -213,7 +216,7 @@ def cleanup_test_resources(docker_client):
         for image in images:
             try:
                 docker_client.images.remove(image.id, force=True)
-            except Exception:
+            except (APIError, ImageNotFound):
                 pass
 
         # Remove test network if exists

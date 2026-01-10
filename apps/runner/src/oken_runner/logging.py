@@ -58,7 +58,4 @@ def setup_logging(level: str = "INFO") -> None:
         logging.getLogger(logger_name).handlers = [InterceptHandler()]
 
 
-# Auto-configure on import
-setup_logging()
-
 __all__ = ["logger", "setup_logging"]

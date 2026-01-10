@@ -3,6 +3,7 @@ from pathlib import Path
 
 from loguru import logger
 
+from .exceptions import ConfigError
 from .models import EntrypointType
 
 
@@ -21,8 +22,7 @@ class EntrypointDetector:
         """
         entrypoint_file = code_path / entrypoint
         if not entrypoint_file.exists():
-            logger.warning(f"Entrypoint file not found: {entrypoint_file}")
-            return EntrypointType.HANDLER
+            raise ConfigError(f"Entrypoint file not found: {entrypoint}")
 
         try:
             source = entrypoint_file.read_text()
@@ -80,14 +80,14 @@ class EntrypointDetector:
         return False
 
     def _has_agent_class(self, tree: ast.AST) -> bool:
-        """Check for Agent class with run() method."""
+        """Check for Agent class with run(), invoke(), or __call__() method."""
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 # Check if class name contains "Agent" or is exactly "Agent"
                 if "Agent" in node.name:
                     # Check for run() or invoke() method
                     for item in node.body:
-                        if isinstance(item, ast.FunctionDef):
+                        if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                             if item.name in ("run", "invoke", "__call__"):
                                 return True
         return False

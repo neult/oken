@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from docker.errors import BuildError as DockerBuildError
+from docker.errors import APIError, BuildError as DockerBuildError
 from docker.errors import ImageNotFound, NotFound
 
 from oken_runner.config import Settings
@@ -258,12 +258,12 @@ class TestContainerLogs:
     def test_get_container_logs_not_found(
         self, mock_docker_manager: DockerManager, mock_docker_client: MagicMock
     ):
-        """Returns empty string for nonexistent container."""
+        """Returns None for nonexistent container."""
         mock_docker_client.containers.get.side_effect = NotFound("Not found")
 
         logs = mock_docker_manager.get_container_logs("nonexistent")
 
-        assert logs == ""
+        assert logs is None
 
 
 class TestImageCleanup:
@@ -321,7 +321,7 @@ class TestOrphanedContainerCleanup:
     ):
         """Continues cleanup even if some containers fail to remove."""
         orphan1 = MagicMock(name="oken-orphan-1")
-        orphan1.remove.side_effect = Exception("Failed")
+        orphan1.remove.side_effect = APIError("Failed")
         orphan2 = MagicMock(name="oken-orphan-2")
         mock_docker_client.containers.list.return_value = [orphan1, orphan2]
 

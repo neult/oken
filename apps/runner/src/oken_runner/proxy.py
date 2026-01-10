@@ -57,7 +57,8 @@ class AgentProxy:
         try:
             response = await self._client.get(url, timeout=5.0)
             return response.status_code == 200
-        except httpx.RequestError:
+        except httpx.RequestError as e:
+            logger.debug(f"Health check failed for {container_name}: {e}")
             return False
 
     async def wait_for_ready(
