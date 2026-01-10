@@ -1,12 +1,12 @@
 import asyncio
-import logging
 from datetime import UTC, datetime
+
+from docker.errors import APIError, NotFound
+from loguru import logger
 
 from .config import Settings
 from .docker_manager import DockerManager
 from .models import AgentState
-
-logger = logging.getLogger(__name__)
 
 
 class AgentRegistry:
@@ -141,5 +141,7 @@ class AgentRegistry:
             try:
                 self.docker.stop_container(agent.container_id)
                 logger.info(f"Stopped idle agent: {agent_id}")
-            except Exception as e:
-                logger.error(f"Failed to stop agent {agent_id}: {e}")
+            except NotFound:
+                logger.debug(f"Container already removed for agent {agent_id}")
+            except APIError as e:
+                logger.error(f"Failed to stop agent {agent_id} (container {agent.container_id}): {e}")

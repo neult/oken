@@ -70,3 +70,27 @@ tasks:
       - uv run ruff format src/ --check
       - uv run ruff check src/
       - uv run ty check src/
+
+  test:runner:
+    desc: Run all runner tests
+    dir: apps/runner
+    cmds:
+      - uv run pytest
+
+  test:runner:unit:
+    desc: Run runner unit tests (no Docker required)
+    dir: apps/runner
+    cmds:
+      - uv run pytest -m "not integration"
+
+  test:runner:integration:
+    desc: Run runner integration tests (requires Docker)
+    dir: apps/runner
+    cmds:
+      - uv run pytest -m integration
+
+  test:runner:cov:
+    desc: Run runner tests with coverage
+    dir: apps/runner
+    cmds:
+      - uv run pytest --cov=oken_runner --cov-report=term-missing

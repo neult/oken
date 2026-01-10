@@ -1,12 +1,10 @@
 import asyncio
-import logging
 
 import httpx
+from loguru import logger
 
 from .config import Settings
 from .exceptions import InvokeError
-
-logger = logging.getLogger(__name__)
 
 
 class AgentProxy:
@@ -59,7 +57,8 @@ class AgentProxy:
         try:
             response = await self._client.get(url, timeout=5.0)
             return response.status_code == 200
-        except httpx.RequestError:
+        except httpx.RequestError as e:
+            logger.debug(f"Health check failed for {container_name}: {e}")
             return False
 
     async def wait_for_ready(

@@ -9,32 +9,31 @@ Python service that executes agent code in Docker containers. Receives commands 
 
 ## Commands
 
+Run task commands from repo root. See `Taskfile.yml` for details.
+
 ```bash
-# Linting and formatting (run before committing)
-uv run ruff check src/                    # Lint
-uv run ruff check src/ --fix              # Lint and auto-fix
-uv run ruff format src/                   # Format
+# Linting, formatting, type checking
+task lint:runner       # Lint and type check
+task format:runner     # Format code
 
-# Type checking
-uv run ty check src/                      # Type check
-
-# From repo root:
-task lint:runner                          # Run all checks
-task format:runner                        # Format code
+# Testing
+task test:runner       # Run all tests
+task test:runner:cov   # Run tests with coverage
 
 # Dependencies
-uv add <pkg>                              # Add dependency
-uv sync                                   # Install deps from lockfile
+uv add <pkg>           # Add dependency
+uv sync                # Install deps from lockfile
 ```
 
-## Testing
-
-```bash
-uv run pytest                      # Run all tests
-uv run pytest -v                   # Verbose
-uv run pytest tests/test_server.py # Single file
-uv run pytest -k "test_health"     # Run matching tests
-```
+Test files:
+- `test_server.py` - API endpoints, security validation (_validate_agent_id, _safe_extract_tarball)
+- `test_entrypoint_detector.py` - AST-based code analysis (handler/agent/http detection)
+- `test_agent_registry.py` - State management, cleanup loop, race conditions
+- `test_proxy.py` - HTTP proxy, health checks, timeouts
+- `test_docker_manager.py` - Docker operations (mocked)
+- `test_models.py` - Pydantic model validation
+- `test_exceptions.py` - Exception hierarchy
+- `test_config.py` - Settings and environment variables
 
 ## Structure
 
@@ -48,8 +47,24 @@ src/oken_runner/
   proxy.py               # HTTP proxy to agent containers
   entrypoint_detector.py # Auto-detect handler/class/server patterns
   exceptions.py          # Custom exception hierarchy
+  logging.py             # Loguru configuration
   __init__.py
 ```
+
+## Logging
+
+Uses [loguru](https://github.com/Delgan/loguru) for structured logging. Import the logger:
+
+```python
+from loguru import logger
+
+logger.info("Message")
+logger.debug("Debug info with context", extra_data=value)
+logger.error("Error occurred")
+logger.exception("Error with traceback")  # includes stack trace
+```
+
+Configuration is in `src/oken_runner/logging.py`. Standard library logging (including uvicorn/fastapi) is intercepted and routed through loguru.
 
 ## How Runner Works
 
