@@ -5,8 +5,8 @@ TanStack Start app - dashboard and REST API. Central hub between CLI and Runner.
 ## Important
 
 - **Do not run long-running commands** (e.g., `bun run dev`). The user will start dev/prod servers manually.
-- **Use bun only.** Do not use npm or yarn.
-- **ALWAYS use task commands from repo root.** Never use `bun run` directly. See `Taskfile.yml` for all available commands.
+- **Use bun only.** **Do NOT** use npm or yarn.
+- **ALWAYS use task commands from repo root.** Never use `bun` if it is defined in the `Taskfile.yml`. See `Taskfile.yml` for all available commands.
 
 ## Commands
 
@@ -33,16 +33,6 @@ bun add -D <pkg>         # Add dev dependency
 ## Linting & Formatting
 
 Uses [Biome](https://biomejs.dev) for linting and formatting. Config in `biome.json`.
-
-## Testing
-
-```bash
-bun run test              # Run all tests once
-bun run test --watch      # Watch mode
-bun run test src/foo.test.ts   # Single file
-```
-
-Tests use vitest. Place test files next to source as `*.test.ts` or `*.test.tsx`.
 
 ## Structure
 
