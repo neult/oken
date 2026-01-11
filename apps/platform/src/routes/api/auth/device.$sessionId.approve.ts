@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deviceAuthSessions } from "@/lib/db/schema";
-import { auth } from "@/lib/auth";
 
 export const Route = createFileRoute("/api/auth/device/$sessionId/approve")({
   server: {

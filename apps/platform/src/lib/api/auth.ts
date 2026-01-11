@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
+import { hashApiKey } from "@/lib/auth/device";
 import { db } from "@/lib/db";
 import { apiKeys, users } from "@/lib/db/schema";
 import { UnauthorizedError } from "./errors";
-import { hashApiKey } from "@/lib/auth/device";
 
 export interface AuthenticatedUser {
   id: string;
@@ -13,7 +13,9 @@ export interface AuthenticatedUser {
  * Validate API key from Authorization header.
  * Expects: Authorization: Bearer ok_xxxxx
  */
-export async function requireAuth(request: Request): Promise<AuthenticatedUser> {
+export async function requireAuth(
+  request: Request
+): Promise<AuthenticatedUser> {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader?.startsWith("Bearer ok_")) {

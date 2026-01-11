@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { generateUserCode } from "@/lib/auth/device";
 import { db } from "@/lib/db";
 import { deviceAuthSessions } from "@/lib/db/schema";
-import { generateUserCode } from "@/lib/auth/device";
 
 export const Route = createFileRoute("/api/auth/device")({
   server: {

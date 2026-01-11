@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { agents } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/api/auth";
 import { errorResponse, NotFoundError } from "@/lib/api/errors";
 import type { AgentResponse, DeleteResponse } from "@/lib/api/types";
+import { db } from "@/lib/db";
+import { agents } from "@/lib/db/schema";
 import { runner } from "@/lib/runner";
 
 export const Route = createFileRoute("/api/agents/$slug")({

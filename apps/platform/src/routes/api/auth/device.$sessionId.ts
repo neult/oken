@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { deviceAuthSessions, apiKeys, users } from "@/lib/db/schema";
 import { generateApiKey, hashApiKey } from "@/lib/auth/device";
+import { db } from "@/lib/db";
+import { apiKeys, deviceAuthSessions, users } from "@/lib/db/schema";
 
 export const Route = createFileRoute("/api/auth/device/$sessionId")({
   server: {
