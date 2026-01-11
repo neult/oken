@@ -3,94 +3,145 @@
 version: '3'
 
 tasks:
+  # ====================
   # Development
+  # ====================
   dev:cli:
-    desc: Run CLI in dev mode
+    desc: "[dev] Run CLI in dev mode"
     dir: apps/cli
     cmds:
       - go run .
 
   dev:platform:
-    desc: Run platform in dev mode
+    desc: "[dev] Run platform on :3000"
     dir: apps/platform
     cmds:
       - bun run dev
 
   dev:runner:
-    desc: Run runner in dev mode
+    desc: "[dev] Run runner on :8000"
     dir: apps/runner
     cmds:
       - uv run fastapi dev src/oken_runner/server.py
 
+  # ====================
   # Build
+  # ====================
   build:cli:
-    desc: Build CLI binary
+    desc: "[build] Build CLI binary"
     dir: apps/cli
     cmds:
       - go build -o oken .
 
   build:platform:
-    desc: Build platform
+    desc: "[build] Build platform for production"
     dir: apps/platform
     cmds:
       - bun run build
 
+  # ====================
   # Database
+  # ====================
+  db:start:
+    desc: "[db] Start local PostgreSQL (Docker)"
+    cmds:
+      - docker compose -f infra/postgres.yml up -d
+
+  db:stop:
+    desc: "[db] Stop local PostgreSQL"
+    cmds:
+      - docker compose -f infra/postgres.yml down
+
   db:generate:
-    desc: Generate Drizzle migrations
+    desc: "[db] Generate Drizzle migrations"
     dir: apps/platform
     cmds:
       - bunx drizzle-kit generate
 
   db:migrate:
-    desc: Run Drizzle migrations
+    desc: "[db] Run Drizzle migrations"
     dir: apps/platform
     cmds:
       - bunx drizzle-kit migrate
 
-  # Linting and formatting
+  # ====================
+  # Lint
+  # ====================
   lint:runner:
-    desc: Lint and type-check runner
+    desc: "[lint] Runner - ruff + ty"
     dir: apps/runner
     cmds:
       - uv run ruff check src/
       - uv run ty check src/
 
+  lint:platform:
+    desc: "[lint] Platform - biome"
+    dir: apps/platform
+    cmds:
+      - bunx biome lint .
+
+  # ====================
+  # Format
+  # ====================
   format:runner:
-    desc: Format runner code
+    desc: "[format] Runner - ruff"
     dir: apps/runner
     cmds:
       - uv run ruff format src/
       - uv run ruff check src/ --fix
 
+  format:platform:
+    desc: "[format] Platform - biome"
+    dir: apps/platform
+    cmds:
+      - bunx biome format --write .
+
+  # ====================
+  # Check (lint + format)
+  # ====================
   check:runner:
-    desc: Run all checks for runner (lint, type-check, format check)
+    desc: "[check] Runner - lint, type-check, format"
     dir: apps/runner
     cmds:
       - uv run ruff format src/ --check
       - uv run ruff check src/
       - uv run ty check src/
 
+  check:platform:
+    desc: "[check] Platform - lint, format, imports"
+    dir: apps/platform
+    cmds:
+      - bunx biome check --write .
+
+  # ====================
+  # Test
+  # ====================
   test:runner:
-    desc: Run all runner tests
+    desc: "[test] Runner - all tests"
     dir: apps/runner
     cmds:
       - uv run pytest
 
   test:runner:unit:
-    desc: Run runner unit tests (no Docker required)
+    desc: "[test] Runner - unit only (no Docker)"
     dir: apps/runner
     cmds:
       - uv run pytest -m "not integration"
 
   test:runner:integration:
-    desc: Run runner integration tests (requires Docker)
+    desc: "[test] Runner - integration (requires Docker)"
     dir: apps/runner
     cmds:
       - uv run pytest -m integration
 
   test:runner:cov:
-    desc: Run runner tests with coverage
+    desc: "[test] Runner - with coverage"
     dir: apps/runner
     cmds:
       - uv run pytest --cov=oken_runner --cov-report=term-missing
+
+  test:platform:
+    desc: "[test] Platform - all tests"
+    dir: apps/platform
+    cmds:
+      - bun run test

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -35,4 +35,27 @@ export const deployments = pgTable("deployments", {
   logs: text("logs"),
   createdAt: timestamp("created_at").defaultNow(),
   finishedAt: timestamp("finished_at"),
+});
+
+// Device auth sessions for CLI login flow (temporary, auto-expire)
+export const deviceAuthSessions = pgTable("device_auth_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userCode: varchar("user_code", { length: 16 }).notNull().unique(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  userId: uuid("user_id").references(() => users.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// API keys for CLI authentication
+export const apiKeys = pgTable("api_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  keyHash: varchar("key_hash", { length: 64 }).notNull(),
+  keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
