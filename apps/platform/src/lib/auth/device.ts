@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt } from "node:crypto";
+import { randomBytes, randomInt, scryptSync } from "node:crypto";
 
 /**
  * Generate a human-readable user code like "ABCD-1234"
@@ -28,8 +28,9 @@ export function generateApiKey(): string {
 }
 
 /**
- * Hash an API key for storage (SHA-256)
+ * Hash an API key for storage using scrypt
  */
 export function hashApiKey(key: string): string {
-  return createHash("sha256").update(key).digest("hex");
+  const salt = "oken-api-key-v1";
+  return scryptSync(key, salt, 32).toString("hex");
 }
