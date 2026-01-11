@@ -22,6 +22,8 @@ task check:platform      # Format, lint, and organize imports
 task test:platform       # Run all tests
 
 # Database
+task db:start            # Start local PostgreSQL (Docker)
+task db:stop             # Stop local PostgreSQL
 task db:generate         # Generate migrations
 task db:migrate          # Run migrations
 
