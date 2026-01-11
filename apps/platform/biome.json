@@ -22,8 +22,5 @@
       "quoteStyle": "double",
       "trailingCommas": "es5"
     }
-  },
-  "files": {
-    "includes": ["src/**/*.ts", "src/**/*.tsx"]
   }
 }

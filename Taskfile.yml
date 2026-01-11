@@ -94,3 +94,28 @@ tasks:
     dir: apps/runner
     cmds:
       - uv run pytest --cov=oken_runner --cov-report=term-missing
+
+  # Platform linting and formatting
+  lint:platform:
+    desc: Lint platform code
+    dir: apps/platform
+    cmds:
+      - bunx biome lint .
+
+  format:platform:
+    desc: Format platform code
+    dir: apps/platform
+    cmds:
+      - bunx biome format --write .
+
+  check:platform:
+    desc: Format, lint, and organize imports for platform
+    dir: apps/platform
+    cmds:
+      - bunx biome check --write .
+
+  test:platform:
+    desc: Run platform tests
+    dir: apps/platform
+    cmds:
+      - bun run test
