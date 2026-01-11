@@ -1,5 +1,7 @@
 // Runner client for communicating with the agent runner service
 
+import { logger } from "@/lib/logger";
+
 export interface DeployResponse {
   agent_id: string;
   status: string;
@@ -66,13 +68,16 @@ export class RunnerClient {
           body = await res.json();
         } else {
           const text = await res.text();
-          console.error(
-            `Runner returned non-JSON error (${contentType}):`,
-            text.substring(0, 500)
+          logger.error(
+            { contentType, body: text.substring(0, 500) },
+            "Runner returned non-JSON error response"
           );
         }
       } catch (parseErr) {
-        console.error("Failed to parse runner error response:", parseErr);
+        logger.error(
+          { err: parseErr },
+          "Failed to parse runner error response"
+        );
       }
 
       throw new RunnerError(

@@ -5,6 +5,7 @@ import { errorResponse, NotFoundError } from "@/lib/api/errors";
 import type { AgentResponse, DeleteResponse } from "@/lib/api/types";
 import { db } from "@/lib/db";
 import { agents } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 import { runner } from "@/lib/runner";
 
 export const Route = createFileRoute("/api/agents/$slug")({
@@ -77,9 +78,9 @@ export const Route = createFileRoute("/api/agents/$slug")({
             try {
               await runner.stop(agent.slug);
             } catch (err) {
-              console.error(
-                `Failed to stop agent ${agent.slug} on runner during delete:`,
-                err
+              logger.error(
+                { err, slug: agent.slug },
+                "Failed to stop agent on runner during delete"
               );
             }
           }

@@ -39,6 +39,8 @@ export class RunnerError extends ApiError {
   }
 }
 
+import { logger } from "@/lib/logger";
+
 export function errorResponse(error: unknown): Response {
   if (error instanceof ApiError) {
     return Response.json(
@@ -47,7 +49,7 @@ export function errorResponse(error: unknown): Response {
     );
   }
 
-  console.error("Unhandled error:", error);
+  logger.error({ err: error }, "Unhandled error");
   return Response.json(
     { error: "Internal server error", code: "INTERNAL_ERROR" },
     { status: 500 }

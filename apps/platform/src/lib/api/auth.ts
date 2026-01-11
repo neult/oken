@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { hashApiKey } from "@/lib/auth/device";
 import { db } from "@/lib/db";
 import { apiKeys, users } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 import { UnauthorizedError } from "./errors";
 
 export interface AuthenticatedUser {
@@ -45,7 +46,7 @@ export async function requireAuth(
     .where(eq(apiKeys.keyHash, keyHash))
     .execute()
     .catch((err) => {
-      console.error("Failed to update API key lastUsedAt:", err);
+      logger.error({ err }, "Failed to update API key lastUsedAt");
     });
 
   return { id: key.userId, email: key.email };
