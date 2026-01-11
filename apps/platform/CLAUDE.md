@@ -6,10 +6,11 @@ TanStack Start app - dashboard and REST API. Central hub between CLI and Runner.
 
 - **Do not run long-running commands** (e.g., `bun run dev`). The user will start dev/prod servers manually.
 - **Use bun only.** Do not use npm or yarn.
+- **ALWAYS use task commands from repo root.** Never use `bun run` directly. See `Taskfile.yml` for all available commands.
 
 ## Commands
 
-Run task commands from repo root. See `Taskfile.yml` for details.
+**IMPORTANT: Always run task commands from repo root, never use `bun run` directly.**
 
 ```bash
 # Linting, formatting
@@ -31,15 +32,7 @@ bun add -D <pkg>         # Add dev dependency
 
 ## Linting & Formatting
 
-Uses [Biome](https://biomejs.dev) for linting and formatting.
-
-```bash
-bun run lint             # Lint all files
-bun run format           # Format all files
-bun run check            # Format, lint, and organize imports
-```
-
-Config in `biome.json`. Biome handles JavaScript, TypeScript, JSX, and JSON files.
+Uses [Biome](https://biomejs.dev) for linting and formatting. Config in `biome.json`.
 
 ## Testing
 

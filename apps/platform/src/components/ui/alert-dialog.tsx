@@ -1,12 +1,13 @@
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import type * as React from "react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
 function AlertDialog({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
 }
 
 function AlertDialogTrigger({
@@ -14,7 +15,7 @@ function AlertDialogTrigger({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
   return (
     <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
-  );
+  )
 }
 
 function AlertDialogPortal({
@@ -22,7 +23,7 @@ function AlertDialogPortal({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
   return (
     <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
-  );
+  )
 }
 
 function AlertDialogOverlay({
@@ -38,7 +39,7 @@ function AlertDialogOverlay({
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogContent({
@@ -57,7 +58,7 @@ function AlertDialogContent({
         {...props}
       />
     </AlertDialogPortal>
-  );
+  )
 }
 
 function AlertDialogHeader({
@@ -70,7 +71,7 @@ function AlertDialogHeader({
       className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogFooter({
@@ -86,7 +87,7 @@ function AlertDialogFooter({
       )}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogTitle({
@@ -99,7 +100,7 @@ function AlertDialogTitle({
       className={cn("text-lg font-semibold", className)}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogDescription({
@@ -112,7 +113,7 @@ function AlertDialogDescription({
       className={cn("text-muted-foreground text-sm", className)}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogAction({
@@ -124,7 +125,7 @@ function AlertDialogAction({
       className={cn(buttonVariants(), className)}
       {...props}
     />
-  );
+  )
 }
 
 function AlertDialogCancel({
@@ -136,7 +137,7 @@ function AlertDialogCancel({
       className={cn(buttonVariants({ variant: "outline" }), className)}
       {...props}
     />
-  );
+  )
 }
 
 export {
@@ -151,4 +152,4 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
-};
+}
