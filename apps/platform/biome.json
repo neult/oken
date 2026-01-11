@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!src/components/ui"]
+    "includes": ["**", "!src/components/ui", "!src/routeTree.gen.ts"]
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    }
   },
   "formatter": {
     "enabled": true,
