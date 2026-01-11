@@ -10,19 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthDeviceRouteImport } from './routes/auth/device'
 import { Route as ApiSecretsRouteImport } from './routes/api/secrets'
 import { Route as ApiAgentsRouteImport } from './routes/api/agents'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
+import { Route as ApiAuthDeviceRouteImport } from './routes/api/auth/device'
+import { Route as ApiAgentsSlugRouteImport } from './routes/api/agents.$slug'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
+import { Route as ApiAuthDeviceLookupRouteImport } from './routes/api/auth/device.lookup'
+import { Route as ApiAuthDeviceSessionIdRouteImport } from './routes/api/auth/device.$sessionId'
+import { Route as ApiAgentsSlugStopRouteImport } from './routes/api/agents.$slug.stop'
+import { Route as ApiAgentsSlugInvokeRouteImport } from './routes/api/agents.$slug.invoke'
+import { Route as ApiAuthDeviceSessionIdApproveRouteImport } from './routes/api/auth/device.$sessionId.approve'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDeviceRoute = AuthDeviceRouteImport.update({
+  id: '/auth/device',
+  path: '/auth/device',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSecretsRoute = ApiSecretsRouteImport.update({
@@ -50,6 +63,16 @@ const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
   path: '/demo/api/names',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthDeviceRoute = ApiAuthDeviceRouteImport.update({
+  id: '/api/auth/device',
+  path: '/api/auth/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentsSlugRoute = ApiAgentsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ApiAgentsRoute,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -70,43 +93,93 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthDeviceLookupRoute = ApiAuthDeviceLookupRouteImport.update({
+  id: '/lookup',
+  path: '/lookup',
+  getParentRoute: () => ApiAuthDeviceRoute,
+} as any)
+const ApiAuthDeviceSessionIdRoute = ApiAuthDeviceSessionIdRouteImport.update({
+  id: '/$sessionId',
+  path: '/$sessionId',
+  getParentRoute: () => ApiAuthDeviceRoute,
+} as any)
+const ApiAgentsSlugStopRoute = ApiAgentsSlugStopRouteImport.update({
+  id: '/stop',
+  path: '/stop',
+  getParentRoute: () => ApiAgentsSlugRoute,
+} as any)
+const ApiAgentsSlugInvokeRoute = ApiAgentsSlugInvokeRouteImport.update({
+  id: '/invoke',
+  path: '/invoke',
+  getParentRoute: () => ApiAgentsSlugRoute,
+} as any)
+const ApiAuthDeviceSessionIdApproveRoute =
+  ApiAuthDeviceSessionIdApproveRouteImport.update({
+    id: '/approve',
+    path: '/approve',
+    getParentRoute: () => ApiAuthDeviceSessionIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/agents': typeof ApiAgentsRoute
+  '/api/agents': typeof ApiAgentsRouteWithChildren
   '/api/secrets': typeof ApiSecretsRoute
+  '/auth/device': typeof AuthDeviceRoute
+  '/api/agents/$slug': typeof ApiAgentsSlugRouteWithChildren
+  '/api/auth/device': typeof ApiAuthDeviceRouteWithChildren
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/agents/$slug/invoke': typeof ApiAgentsSlugInvokeRoute
+  '/api/agents/$slug/stop': typeof ApiAgentsSlugStopRoute
+  '/api/auth/device/$sessionId': typeof ApiAuthDeviceSessionIdRouteWithChildren
+  '/api/auth/device/lookup': typeof ApiAuthDeviceLookupRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
+  '/api/auth/device/$sessionId/approve': typeof ApiAuthDeviceSessionIdApproveRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/agents': typeof ApiAgentsRoute
+  '/api/agents': typeof ApiAgentsRouteWithChildren
   '/api/secrets': typeof ApiSecretsRoute
+  '/auth/device': typeof AuthDeviceRoute
+  '/api/agents/$slug': typeof ApiAgentsSlugRouteWithChildren
+  '/api/auth/device': typeof ApiAuthDeviceRouteWithChildren
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/agents/$slug/invoke': typeof ApiAgentsSlugInvokeRoute
+  '/api/agents/$slug/stop': typeof ApiAgentsSlugStopRoute
+  '/api/auth/device/$sessionId': typeof ApiAuthDeviceSessionIdRouteWithChildren
+  '/api/auth/device/lookup': typeof ApiAuthDeviceLookupRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
+  '/api/auth/device/$sessionId/approve': typeof ApiAuthDeviceSessionIdApproveRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/agents': typeof ApiAgentsRoute
+  '/api/agents': typeof ApiAgentsRouteWithChildren
   '/api/secrets': typeof ApiSecretsRoute
+  '/auth/device': typeof AuthDeviceRoute
+  '/api/agents/$slug': typeof ApiAgentsSlugRouteWithChildren
+  '/api/auth/device': typeof ApiAuthDeviceRouteWithChildren
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/agents/$slug/invoke': typeof ApiAgentsSlugInvokeRoute
+  '/api/agents/$slug/stop': typeof ApiAgentsSlugStopRoute
+  '/api/auth/device/$sessionId': typeof ApiAuthDeviceSessionIdRouteWithChildren
+  '/api/auth/device/lookup': typeof ApiAuthDeviceLookupRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
+  '/api/auth/device/$sessionId/approve': typeof ApiAuthDeviceSessionIdApproveRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,43 +187,69 @@ export interface FileRouteTypes {
     | '/'
     | '/api/agents'
     | '/api/secrets'
+    | '/auth/device'
+    | '/api/agents/$slug'
+    | '/api/auth/device'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/agents/$slug/invoke'
+    | '/api/agents/$slug/stop'
+    | '/api/auth/device/$sessionId'
+    | '/api/auth/device/lookup'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr'
+    | '/api/auth/device/$sessionId/approve'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/agents'
     | '/api/secrets'
+    | '/auth/device'
+    | '/api/agents/$slug'
+    | '/api/auth/device'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/agents/$slug/invoke'
+    | '/api/agents/$slug/stop'
+    | '/api/auth/device/$sessionId'
+    | '/api/auth/device/lookup'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr'
+    | '/api/auth/device/$sessionId/approve'
   id:
     | '__root__'
     | '/'
     | '/api/agents'
     | '/api/secrets'
+    | '/auth/device'
+    | '/api/agents/$slug'
+    | '/api/auth/device'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/agents/$slug/invoke'
+    | '/api/agents/$slug/stop'
+    | '/api/auth/device/$sessionId'
+    | '/api/auth/device/lookup'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr/'
+    | '/api/auth/device/$sessionId/approve'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiAgentsRoute: typeof ApiAgentsRoute
+  ApiAgentsRoute: typeof ApiAgentsRouteWithChildren
   ApiSecretsRoute: typeof ApiSecretsRoute
+  AuthDeviceRoute: typeof AuthDeviceRoute
+  ApiAuthDeviceRoute: typeof ApiAuthDeviceRouteWithChildren
   DemoApiNamesRoute: typeof DemoApiNamesRoute
   DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
@@ -167,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/device': {
+      id: '/auth/device'
+      path: '/auth/device'
+      fullPath: '/auth/device'
+      preLoaderRoute: typeof AuthDeviceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/secrets': {
@@ -204,6 +310,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoApiNamesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/device': {
+      id: '/api/auth/device'
+      path: '/api/auth/device'
+      fullPath: '/api/auth/device'
+      preLoaderRoute: typeof ApiAuthDeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agents/$slug': {
+      id: '/api/agents/$slug'
+      path: '/$slug'
+      fullPath: '/api/agents/$slug'
+      preLoaderRoute: typeof ApiAgentsSlugRouteImport
+      parentRoute: typeof ApiAgentsRoute
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -232,13 +352,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/device/lookup': {
+      id: '/api/auth/device/lookup'
+      path: '/lookup'
+      fullPath: '/api/auth/device/lookup'
+      preLoaderRoute: typeof ApiAuthDeviceLookupRouteImport
+      parentRoute: typeof ApiAuthDeviceRoute
+    }
+    '/api/auth/device/$sessionId': {
+      id: '/api/auth/device/$sessionId'
+      path: '/$sessionId'
+      fullPath: '/api/auth/device/$sessionId'
+      preLoaderRoute: typeof ApiAuthDeviceSessionIdRouteImport
+      parentRoute: typeof ApiAuthDeviceRoute
+    }
+    '/api/agents/$slug/stop': {
+      id: '/api/agents/$slug/stop'
+      path: '/stop'
+      fullPath: '/api/agents/$slug/stop'
+      preLoaderRoute: typeof ApiAgentsSlugStopRouteImport
+      parentRoute: typeof ApiAgentsSlugRoute
+    }
+    '/api/agents/$slug/invoke': {
+      id: '/api/agents/$slug/invoke'
+      path: '/invoke'
+      fullPath: '/api/agents/$slug/invoke'
+      preLoaderRoute: typeof ApiAgentsSlugInvokeRouteImport
+      parentRoute: typeof ApiAgentsSlugRoute
+    }
+    '/api/auth/device/$sessionId/approve': {
+      id: '/api/auth/device/$sessionId/approve'
+      path: '/approve'
+      fullPath: '/api/auth/device/$sessionId/approve'
+      preLoaderRoute: typeof ApiAuthDeviceSessionIdApproveRouteImport
+      parentRoute: typeof ApiAuthDeviceSessionIdRoute
+    }
   }
 }
 
+interface ApiAgentsSlugRouteChildren {
+  ApiAgentsSlugInvokeRoute: typeof ApiAgentsSlugInvokeRoute
+  ApiAgentsSlugStopRoute: typeof ApiAgentsSlugStopRoute
+}
+
+const ApiAgentsSlugRouteChildren: ApiAgentsSlugRouteChildren = {
+  ApiAgentsSlugInvokeRoute: ApiAgentsSlugInvokeRoute,
+  ApiAgentsSlugStopRoute: ApiAgentsSlugStopRoute,
+}
+
+const ApiAgentsSlugRouteWithChildren = ApiAgentsSlugRoute._addFileChildren(
+  ApiAgentsSlugRouteChildren,
+)
+
+interface ApiAgentsRouteChildren {
+  ApiAgentsSlugRoute: typeof ApiAgentsSlugRouteWithChildren
+}
+
+const ApiAgentsRouteChildren: ApiAgentsRouteChildren = {
+  ApiAgentsSlugRoute: ApiAgentsSlugRouteWithChildren,
+}
+
+const ApiAgentsRouteWithChildren = ApiAgentsRoute._addFileChildren(
+  ApiAgentsRouteChildren,
+)
+
+interface ApiAuthDeviceSessionIdRouteChildren {
+  ApiAuthDeviceSessionIdApproveRoute: typeof ApiAuthDeviceSessionIdApproveRoute
+}
+
+const ApiAuthDeviceSessionIdRouteChildren: ApiAuthDeviceSessionIdRouteChildren =
+  {
+    ApiAuthDeviceSessionIdApproveRoute: ApiAuthDeviceSessionIdApproveRoute,
+  }
+
+const ApiAuthDeviceSessionIdRouteWithChildren =
+  ApiAuthDeviceSessionIdRoute._addFileChildren(
+    ApiAuthDeviceSessionIdRouteChildren,
+  )
+
+interface ApiAuthDeviceRouteChildren {
+  ApiAuthDeviceSessionIdRoute: typeof ApiAuthDeviceSessionIdRouteWithChildren
+  ApiAuthDeviceLookupRoute: typeof ApiAuthDeviceLookupRoute
+}
+
+const ApiAuthDeviceRouteChildren: ApiAuthDeviceRouteChildren = {
+  ApiAuthDeviceSessionIdRoute: ApiAuthDeviceSessionIdRouteWithChildren,
+  ApiAuthDeviceLookupRoute: ApiAuthDeviceLookupRoute,
+}
+
+const ApiAuthDeviceRouteWithChildren = ApiAuthDeviceRoute._addFileChildren(
+  ApiAuthDeviceRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiAgentsRoute: ApiAgentsRoute,
+  ApiAgentsRoute: ApiAgentsRouteWithChildren,
   ApiSecretsRoute: ApiSecretsRoute,
+  AuthDeviceRoute: AuthDeviceRoute,
+  ApiAuthDeviceRoute: ApiAuthDeviceRouteWithChildren,
   DemoApiNamesRoute: DemoApiNamesRoute,
   DemoStartApiRequestRoute: DemoStartApiRequestRoute,
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
