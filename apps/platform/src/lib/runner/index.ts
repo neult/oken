@@ -1,9 +1,109 @@
 // Runner client for communicating with the agent runner service
 
+export interface DeployResponse {
+  agent_id: string;
+  status: string;
+  endpoint?: string;
+  error?: string;
+}
+
+export interface InvokeResponse {
+  output?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface StopResponse {
+  agent_id: string;
+  status: string;
+}
+
+export interface HealthResponse {
+  status: string;
+  agents_running: number;
+}
+
+export interface AgentInfo {
+  agent_id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  last_invoked: string | null;
+}
+
+export interface AgentListResponse {
+  agents: AgentInfo[];
+}
+
+export class RunnerError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string
+  ) {
+    super(message);
+    this.name = "RunnerError";
+  }
+}
+
 export class RunnerClient {
   private baseUrl: string;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+  constructor(
+    baseUrl: string = process.env.RUNNER_URL ?? "http://localhost:8000"
+  ) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
+  }
+
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, options);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new RunnerError(
+        body.error ?? `Request failed: ${res.status}`,
+        res.status,
+        body.code
+      );
+    }
+
+    return res.json();
+  }
+
+  async deploy(agentId: string, tarball: ArrayBuffer): Promise<DeployResponse> {
+    const formData = new FormData();
+    formData.append("agent_id", agentId);
+    formData.append("tarball", new Blob([tarball]), "agent.tar.gz");
+
+    return this.request<DeployResponse>("/deploy", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async invoke(
+    agentId: string,
+    input: Record<string, unknown>
+  ): Promise<InvokeResponse> {
+    return this.request<InvokeResponse>(`/invoke/${agentId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input }),
+    });
+  }
+
+  async stop(agentId: string): Promise<StopResponse> {
+    return this.request<StopResponse>(`/stop/${agentId}`, {
+      method: "POST",
+    });
+  }
+
+  async health(): Promise<HealthResponse> {
+    return this.request<HealthResponse>("/health");
+  }
+
+  async listAgents(): Promise<AgentListResponse> {
+    return this.request<AgentListResponse>("/agents");
   }
 }
+
+export const runner = new RunnerClient();
