@@ -76,8 +76,11 @@ export const Route = createFileRoute("/api/agents/$slug")({
           if (agent.status === "running") {
             try {
               await runner.stop(agent.slug);
-            } catch {
-              // Ignore runner errors during delete
+            } catch (err) {
+              console.error(
+                `Failed to stop agent ${agent.slug} on runner during delete:`,
+                err
+              );
             }
           }
 

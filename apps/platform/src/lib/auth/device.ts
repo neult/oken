@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomInt } from "node:crypto";
 
 /**
  * Generate a human-readable user code like "ABCD-1234"
@@ -9,11 +9,11 @@ export function generateUserCode(): string {
 
   let code = "";
   for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomInt(chars.length)];
   }
   code += "-";
   for (let i = 0; i < 4; i++) {
-    code += nums[Math.floor(Math.random() * nums.length)];
+    code += nums[randomInt(nums.length)];
   }
   return code;
 }

@@ -39,12 +39,14 @@ export async function requireAuth(
     throw new UnauthorizedError("Invalid API key");
   }
 
-  // Update last used timestamp (fire and forget)
+  // Update last used timestamp (fire and forget, but log failures)
   db.update(apiKeys)
     .set({ lastUsedAt: new Date() })
     .where(eq(apiKeys.keyHash, keyHash))
     .execute()
-    .catch(() => {});
+    .catch((err) => {
+      console.error("Failed to update API key lastUsedAt:", err);
+    });
 
   return { id: key.userId, email: key.email };
 }

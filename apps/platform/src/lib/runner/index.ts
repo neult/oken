@@ -58,11 +58,27 @@ export class RunnerClient {
     const res = await fetch(`${this.baseUrl}${path}`, options);
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      let body: Record<string, unknown> = {};
+      const contentType = res.headers.get("content-type") ?? "";
+
+      try {
+        if (contentType.includes("application/json")) {
+          body = await res.json();
+        } else {
+          const text = await res.text();
+          console.error(
+            `Runner returned non-JSON error (${contentType}):`,
+            text.substring(0, 500)
+          );
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse runner error response:", parseErr);
+      }
+
       throw new RunnerError(
-        body.error ?? `Request failed: ${res.status}`,
+        (body.error as string) ?? `Request failed: ${res.status}`,
         res.status,
-        body.code
+        body.code as string | undefined
       );
     }
 
