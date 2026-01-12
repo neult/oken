@@ -141,10 +141,16 @@ tasks:
       - uv run pytest --cov=oken_runner --cov-report=term-missing
 
   test:platform:
-    desc: "[test] Platform - all tests"
+    desc: "[test] Platform - unit tests"
     dir: apps/platform
     cmds:
       - bun run test
+
+  test:platform:integration:
+    desc: "[test] Platform - integration tests (requires Docker)"
+    dir: apps/platform
+    cmds:
+      - bunx vitest run --config vitest.integration.config.ts
 
   test:platform:cov:
     desc: "[test] Platform - with coverage"
