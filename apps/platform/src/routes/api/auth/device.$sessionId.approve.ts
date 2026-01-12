@@ -55,14 +55,27 @@ export async function handleApproveDeviceAuth(
       );
     }
 
-    // Approve the session
-    await db
+    // Approve the session atomically to prevent race conditions
+    const [updated] = await db
       .update(deviceAuthSessions)
       .set({
         status: "approved",
         userId: session.user.id,
       })
-      .where(eq(deviceAuthSessions.id, sessionId));
+      .where(
+        and(
+          eq(deviceAuthSessions.id, sessionId),
+          eq(deviceAuthSessions.status, "pending")
+        )
+      )
+      .returning();
+
+    if (!updated) {
+      return Response.json(
+        { error: "Session already processed", code: "CONFLICT" },
+        { status: 409 }
+      );
+    }
 
     return Response.json({ success: true });
   } catch (error) {

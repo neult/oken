@@ -37,7 +37,7 @@ vi.mock("@/lib/logger", () => ({
 import { requireAuth } from "@/lib/api/auth";
 import { db } from "@/lib/db";
 import { runner } from "@/lib/runner";
-import { handleListAgents } from "@/routes/api/agents";
+import { handleCreateAgent, handleListAgents } from "@/routes/api/agents";
 import { handleDeleteAgent, handleGetAgent } from "@/routes/api/agents.$slug";
 import { handleInvokeAgent } from "@/routes/api/agents.$slug.invoke";
 import { handleStopAgent } from "@/routes/api/agents.$slug.stop";
@@ -120,6 +120,169 @@ describe("Agent API Routes", () => {
         const result = createAgentSchema.safeParse({ name: "Test", slug });
         expect(result.success).toBe(false);
       }
+    });
+
+    it("creates agent and deploys to runner", async () => {
+      const mockAgent = {
+        id: "agent-1",
+        name: "Test Agent",
+        slug: "test-agent",
+        status: "deploying",
+        userId: mockUser.id,
+        pythonVersion: "3.12",
+        entrypoint: "main.py",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockDeployment = {
+        id: "deploy-1",
+        agentId: "agent-1",
+        status: "pending",
+      };
+
+      // Mock db.select for slug check (not found)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      // Mock db.insert for agent and deployment
+      const mockInsert = vi.fn()
+        .mockReturnValueOnce({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        })
+        .mockReturnValueOnce({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockDeployment]),
+          }),
+        });
+      vi.mocked(db.insert).mockImplementation(mockInsert);
+
+      // Mock runner.deploy
+      vi.mocked(runner.deploy).mockResolvedValue({
+        status: "running",
+        endpoint: "/invoke/test-agent",
+      });
+
+      // Mock db.update for agent and deployment status
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      // Create mock request with mocked formData
+      const mockFile = {
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(12)),
+      };
+      const mockFormData = {
+        get: vi.fn((key: string) => {
+          if (key === "name") return "Test Agent";
+          if (key === "slug") return "test-agent";
+          if (key === "tarball") return mockFile;
+          return null;
+        }),
+      };
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+
+      const response = await handleCreateAgent(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(body.agent.slug).toBe("test-agent");
+      expect(body.agent.status).toBe("running");
+      expect(runner.deploy).toHaveBeenCalled();
+    });
+
+    it("returns 409 when slug already exists", async () => {
+      // Mock db.select to return existing agent
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ id: "existing-agent" }]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const mockFormData = {
+        get: vi.fn((key: string) => {
+          if (key === "name") return "Test Agent";
+          if (key === "slug") return "existing-slug";
+          if (key === "tarball") return new File(["test content"], "agent.tar.gz");
+          return null;
+        }),
+      };
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+
+      const response = await handleCreateAgent(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(body.code).toBe("CONFLICT");
+    });
+
+    it("returns 400 when tarball is missing", async () => {
+      const mockFormData = {
+        get: vi.fn((key: string) => {
+          if (key === "name") return "Test Agent";
+          if (key === "slug") return "test-agent";
+          return null;
+        }),
+      };
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+
+      const response = await handleCreateAgent(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 400 for invalid name/slug", async () => {
+      const mockFormData = {
+        get: vi.fn((key: string) => {
+          if (key === "name") return "";
+          if (key === "slug") return "INVALID-UPPERCASE";
+          if (key === "tarball") return new File(["test content"], "agent.tar.gz");
+          return null;
+        }),
+      };
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+
+      const response = await handleCreateAgent(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
     });
   });
 
@@ -331,6 +494,37 @@ describe("Agent API Routes", () => {
       });
       expect(body.output).toEqual({ result: "success" });
     });
+
+    it("returns 400 when agent is not running", async () => {
+      const mockAgent = {
+        id: "agent-1",
+        slug: "test-agent",
+        status: "stopped",
+        userId: mockUser.id,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+        body: { input: { query: "test" } },
+      });
+
+      const response = await handleInvokeAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
+      expect(body.error).toContain("not running");
+    });
   });
 
   describe("POST /api/agents/:slug/stop", () => {
@@ -406,6 +600,36 @@ describe("Agent API Routes", () => {
       expect(response.status).toBe(200);
       expect(runner.stop).toHaveBeenCalledWith("test-agent");
       expect(body.message).toBe("Agent stopped successfully");
+    });
+
+    it("returns 400 when agent is not running", async () => {
+      const mockAgent = {
+        id: "agent-1",
+        slug: "test-agent",
+        status: "stopped",
+        userId: mockUser.id,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleStopAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
+      expect(body.error).toContain("not running");
     });
   });
 });

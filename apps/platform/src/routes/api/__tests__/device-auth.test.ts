@@ -354,7 +354,9 @@ describe("Device Auth API Routes", () => {
 
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{ ...pendingSession, status: "approved", userId: mockUser.id }]),
+          }),
         }),
       });
       vi.mocked(db.update).mockImplementation(mockUpdate);
@@ -372,6 +374,51 @@ describe("Device Auth API Routes", () => {
       expect(response.status).toBe(200);
       expect(body.success).toBe(true);
       expect(db.update).toHaveBeenCalled();
+    });
+
+    it("returns 409 when session already processed (race condition)", async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { id: "user-123", email: "test@example.com" },
+        session: { id: "session-id" },
+      } as never);
+
+      const pendingSession = {
+        id: "12345678-1234-1234-1234-123456789012",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 60000),
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([pendingSession]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      // Simulate race condition: update returns empty (another request already processed)
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(
+        request,
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(body.code).toBe("CONFLICT");
     });
   });
 
