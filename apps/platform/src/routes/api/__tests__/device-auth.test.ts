@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockRequest } from "@/__tests__/setup";
 
 // Mock dependencies before imports
 vi.mock("@/lib/db", () => ({
@@ -29,8 +30,12 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 import { auth } from "@/lib/auth";
-import { generateApiKey, generateUserCode } from "@/lib/auth/device";
+import { generateApiKey } from "@/lib/auth/device";
 import { db } from "@/lib/db";
+import { handleStartDeviceAuth } from "@/routes/api/auth/device";
+import { handlePollDeviceAuth } from "@/routes/api/auth/device.$sessionId";
+import { handleApproveDeviceAuth } from "@/routes/api/auth/device.$sessionId.approve";
+import { handleLookupDeviceAuth } from "@/routes/api/auth/device.lookup";
 
 describe("Device Auth API Routes", () => {
   beforeEach(() => {
@@ -53,42 +58,23 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.insert).mockImplementation(mockInsert);
 
-      // Simulate the handler logic
-      const userCode = generateUserCode();
-      expect(userCode).toBe("ABCD-1234");
+      const response = await handleStartDeviceAuth();
+      const body = await response.json();
 
-      const response = {
-        sessionId: mockSession.id,
-        userCode: mockSession.userCode,
-        loginUrl: `http://localhost:3000/auth/device?code=${mockSession.userCode}`,
-        expiresAt: mockSession.expiresAt.toISOString(),
-        pollInterval: 5,
-      };
-
-      expect(response.sessionId).toBe("session-123");
-      expect(response.userCode).toBe("ABCD-1234");
-      expect(response.pollInterval).toBe(5);
-    });
-
-    it("sets expiration to 10 minutes from now", async () => {
-      const now = Date.now();
-      const expiresAt = new Date(now + 10 * 60 * 1000);
-
-      // 10 minutes = 600000ms
-      expect(expiresAt.getTime() - now).toBe(600000);
+      expect(response.status).toBe(200);
+      expect(body.sessionId).toBe("session-123");
+      expect(body.userCode).toBe("ABCD-1234");
+      expect(body.pollInterval).toBe(5);
     });
   });
 
   describe("GET /api/auth/device/:sessionId", () => {
     it("returns 400 for invalid UUID format", async () => {
-      const invalidIds = ["not-a-uuid", "123", "abc-def-ghi"];
+      const response = await handlePollDeviceAuth("not-a-uuid");
+      const body = await response.json();
 
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-      for (const id of invalidIds) {
-        expect(uuidRegex.test(id)).toBe(false);
-      }
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
     });
 
     it("returns 404 when session not found", async () => {
@@ -101,34 +87,68 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const sessions: unknown[] = [];
-      expect(sessions.length).toBe(0);
+      const response = await handlePollDeviceAuth(
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("returns 410 when session is expired", async () => {
       const expiredSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "pending",
-        expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+        expiresAt: new Date(Date.now() - 1000),
       };
 
-      const isExpired = new Date() > expiredSession.expiresAt;
-      expect(isExpired).toBe(true);
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([expiredSession]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const response = await handlePollDeviceAuth(
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(410);
+      expect(body.code).toBe("EXPIRED");
     });
 
     it("returns pending status when session is pending", async () => {
       const pendingSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "pending",
         expiresAt: new Date(Date.now() + 60000),
       };
 
-      expect(pendingSession.status).toBe("pending");
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([pendingSession]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const response = await handlePollDeviceAuth(
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.status).toBe("pending");
     });
 
     it("returns token when session is approved", async () => {
       const approvedSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "approved",
         userId: "user-123",
         expiresAt: new Date(Date.now() + 60000),
@@ -146,7 +166,9 @@ describe("Device Auth API Routes", () => {
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ ...approvedSession, status: "completed" }]),
+            returning: vi
+              .fn()
+              .mockResolvedValue([{ ...approvedSession, status: "completed" }]),
           }),
         }),
       });
@@ -162,40 +184,49 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.delete).mockImplementation(mockDelete);
 
-      // Simulate generating API key
-      const apiKey = generateApiKey();
-      expect(apiKey).toBe("ok_testkey12345678901234567890ab");
+      const response = await handlePollDeviceAuth(
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
 
-      const response = {
-        status: "approved",
-        token: apiKey,
-        user: { email: "test@example.com" },
-      };
-
-      expect(response.status).toBe("approved");
-      expect(response.token).toMatch(/^ok_/);
+      expect(response.status).toBe(200);
+      expect(body.status).toBe("approved");
+      expect(body.token).toBe(generateApiKey());
     });
 
     it("returns 409 when session already processed (race condition)", async () => {
       const approvedSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "approved",
         userId: "user-123",
         expiresAt: new Date(Date.now() + 60000),
       };
 
-      // Simulate atomic update returning empty (already processed)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([approvedSession]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([]), // Empty = already processed
+            returning: vi.fn().mockResolvedValue([]),
           }),
         }),
       });
       vi.mocked(db.update).mockImplementation(mockUpdate);
 
-      const updated: unknown[] = [];
-      expect(updated.length).toBe(0); // Indicates conflict
+      const response = await handlePollDeviceAuth(
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(body.code).toBe("CONFLICT");
     });
   });
 
@@ -203,15 +234,35 @@ describe("Device Auth API Routes", () => {
     it("returns 401 when user is not logged in", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue(null);
 
-      const session = await auth.api.getSession({ headers: new Headers() });
-      expect(session).toBeNull();
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(
+        request,
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(body.code).toBe("UNAUTHORIZED");
     });
 
     it("returns 400 for invalid UUID format", async () => {
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        user: { id: "user-123", email: "test@example.com" },
+        session: { id: "session-id" },
+      } as never);
 
-      expect(uuidRegex.test("invalid")).toBe(false);
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(request, "invalid");
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
     });
 
     it("returns 404 when session not found or not pending", async () => {
@@ -229,8 +280,18 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const sessions: unknown[] = [];
-      expect(sessions.length).toBe(0);
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(
+        request,
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("returns 410 when session is expired", async () => {
@@ -240,13 +301,32 @@ describe("Device Auth API Routes", () => {
       } as never);
 
       const expiredSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "pending",
         expiresAt: new Date(Date.now() - 1000),
       };
 
-      const isExpired = new Date() > expiredSession.expiresAt;
-      expect(isExpired).toBe(true);
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([expiredSession]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(
+        request,
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(410);
+      expect(body.code).toBe("EXPIRED");
     });
 
     it("approves session and links to user", async () => {
@@ -258,7 +338,7 @@ describe("Device Auth API Routes", () => {
       } as never);
 
       const pendingSession = {
-        id: "session-123",
+        id: "12345678-1234-1234-1234-123456789012",
         status: "pending",
         expiresAt: new Date(Date.now() + 60000),
       };
@@ -279,16 +359,33 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.update).mockImplementation(mockUpdate);
 
-      // Simulate approval
-      expect(pendingSession.status).toBe("pending");
-      expect(mockUser.id).toBe("user-123");
+      const request = createMockRequest({
+        method: "POST",
+      });
+
+      const response = await handleApproveDeviceAuth(
+        request,
+        "12345678-1234-1234-1234-123456789012"
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(db.update).toHaveBeenCalled();
     });
   });
 
   describe("GET /api/auth/device/lookup", () => {
     it("returns 400 when code is missing", async () => {
-      const code = undefined;
-      expect(code).toBeUndefined();
+      const request = createMockRequest({
+        url: "http://test/api/auth/device/lookup",
+      });
+
+      const response = await handleLookupDeviceAuth(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body.code).toBe("VALIDATION_ERROR");
     });
 
     it("returns 404 when session not found by code", async () => {
@@ -301,16 +398,20 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const sessions: unknown[] = [];
-      expect(sessions.length).toBe(0);
+      const request = createMockRequest({
+        url: "http://test/api/auth/device/lookup?code=ABCD-1234",
+      });
+
+      const response = await handleLookupDeviceAuth(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("returns session info when found", async () => {
       const mockSession = {
         id: "session-123",
-        userCode: "ABCD-1234",
-        status: "pending",
-        expiresAt: new Date(Date.now() + 60000),
       };
 
       const mockSelect = vi.fn().mockReturnValue({
@@ -322,8 +423,15 @@ describe("Device Auth API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      expect(mockSession.id).toBe("session-123");
-      expect(mockSession.userCode).toBe("ABCD-1234");
+      const request = createMockRequest({
+        url: "http://test/api/auth/device/lookup?code=ABCD-1234",
+      });
+
+      const response = await handleLookupDeviceAuth(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.sessionId).toBe("session-123");
     });
   });
 });

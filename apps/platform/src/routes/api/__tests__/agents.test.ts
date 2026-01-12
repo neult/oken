@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockRequest } from "@/__tests__/setup";
 
 // Mock dependencies before imports
 vi.mock("@/lib/api/auth", () => ({
@@ -36,6 +37,10 @@ vi.mock("@/lib/logger", () => ({
 import { requireAuth } from "@/lib/api/auth";
 import { db } from "@/lib/db";
 import { runner } from "@/lib/runner";
+import { handleListAgents } from "@/routes/api/agents";
+import { handleDeleteAgent, handleGetAgent } from "@/routes/api/agents.$slug";
+import { handleInvokeAgent } from "@/routes/api/agents.$slug.invoke";
+import { handleStopAgent } from "@/routes/api/agents.$slug.stop";
 
 describe("Agent API Routes", () => {
   const mockUser = { id: "user-123", email: "test@example.com" };
@@ -54,13 +59,15 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      // Simulate calling the handler logic
-      const userAgents: unknown[] = [];
-      const response = {
-        agents: userAgents.map(() => ({})),
-      };
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
 
-      expect(response.agents).toEqual([]);
+      const response = await handleListAgents(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.agents).toEqual([]);
     });
 
     it("returns user's agents", async () => {
@@ -85,22 +92,16 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const response = {
-        agents: mockAgents.map((a) => ({
-          id: a.id,
-          name: a.name,
-          slug: a.slug,
-          status: a.status,
-          endpoint: a.endpoint,
-          pythonVersion: a.pythonVersion,
-          entrypoint: a.entrypoint,
-          createdAt: a.createdAt?.toISOString() ?? "",
-          updatedAt: a.updatedAt?.toISOString() ?? "",
-        })),
-      };
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
 
-      expect(response.agents).toHaveLength(1);
-      expect(response.agents[0].slug).toBe("test-agent");
+      const response = await handleListAgents(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.agents).toHaveLength(1);
+      expect(body.agents[0].slug).toBe("test-agent");
     });
   });
 
@@ -120,68 +121,6 @@ describe("Agent API Routes", () => {
         expect(result.success).toBe(false);
       }
     });
-
-    it("rejects when slug already exists", async () => {
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([{ id: "existing-agent" }]),
-          }),
-        }),
-      });
-      vi.mocked(db.select).mockImplementation(mockSelect);
-
-      // Simulate conflict check
-      const existing = [{ id: "existing-agent" }];
-      expect(existing.length).toBeGreaterThan(0);
-    });
-
-    it("creates agent and deploys to runner on success", async () => {
-      // Mock no existing agent
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
-          }),
-        }),
-      });
-      vi.mocked(db.select).mockImplementation(mockSelect);
-
-      // Mock insert
-      const mockAgent = {
-        id: "new-agent-id",
-        name: "New Agent",
-        slug: "new-agent",
-        status: "deploying",
-        userId: mockUser.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const mockInsert = vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockAgent]),
-        }),
-      });
-      vi.mocked(db.insert).mockImplementation(mockInsert);
-
-      // Mock runner deploy
-      vi.mocked(runner.deploy).mockResolvedValue({
-        status: "running",
-        endpoint: "/invoke/new-agent",
-      });
-
-      // Mock update
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
-        }),
-      });
-      vi.mocked(db.update).mockImplementation(mockUpdate);
-
-      // Verify runner.deploy would be called
-      expect(runner.deploy).not.toHaveBeenCalled(); // Not called yet in this test
-    });
   });
 
   describe("GET /api/agents/:slug", () => {
@@ -195,23 +134,15 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const agents: unknown[] = [];
-      expect(agents.length).toBe(0);
-    });
-
-    it("returns 404 when agent belongs to different user", async () => {
-      // The where clause includes userId check, so no results means not found
-      const mockSelect = vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
-          }),
-        }),
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const agents: unknown[] = [];
-      expect(agents.length).toBe(0);
+      const response = await handleGetAgent(request, "nonexistent");
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("returns agent when found", async () => {
@@ -237,8 +168,15 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const [agent] = [mockAgent];
-      expect(agent.slug).toBe("test-agent");
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleGetAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.slug).toBe("test-agent");
     });
   });
 
@@ -253,8 +191,15 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const agents: unknown[] = [];
-      expect(agents.length).toBe(0);
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleDeleteAgent(request, "nonexistent");
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("stops runner if agent is running before delete", async () => {
@@ -281,11 +226,13 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.delete).mockImplementation(mockDelete);
 
-      // Simulate the logic
-      if (mockAgent.status === "running") {
-        await runner.stop(mockAgent.slug);
-      }
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
 
+      const response = await handleDeleteAgent(request, "test-agent");
+
+      expect(response.status).toBe(200);
       expect(runner.stop).toHaveBeenCalledWith("test-agent");
     });
 
@@ -311,8 +258,16 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.delete).mockImplementation(mockDelete);
 
-      // Verify delete would be called
-      expect(db.delete).not.toHaveBeenCalled(); // Setup only
+      const request = createMockRequest({
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleDeleteAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.message).toBe("Agent deleted successfully");
+      expect(db.delete).toHaveBeenCalled();
     });
   });
 
@@ -327,8 +282,17 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const agents: unknown[] = [];
-      expect(agents.length).toBe(0);
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+        body: { input: { query: "test" } },
+      });
+
+      const response = await handleInvokeAgent(request, "nonexistent");
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("proxies request to runner", async () => {
@@ -352,10 +316,20 @@ describe("Agent API Routes", () => {
         output: { result: "success" },
       });
 
-      const result = await runner.invoke(mockAgent.slug, { query: "test" });
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+        body: { input: { query: "test" } },
+      });
 
-      expect(runner.invoke).toHaveBeenCalledWith("test-agent", { query: "test" });
-      expect(result.output).toEqual({ result: "success" });
+      const response = await handleInvokeAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(runner.invoke).toHaveBeenCalledWith("test-agent", {
+        query: "test",
+      });
+      expect(body.output).toEqual({ result: "success" });
     });
   });
 
@@ -370,8 +344,16 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const agents: unknown[] = [];
-      expect(agents.length).toBe(0);
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleStopAgent(request, "nonexistent");
+      const body = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(body.code).toBe("NOT_FOUND");
     });
 
     it("calls runner.stop and updates agent status", async () => {
@@ -393,16 +375,37 @@ describe("Agent API Routes", () => {
 
       vi.mocked(runner.stop).mockResolvedValue({ status: "stopped" });
 
+      const updatedAgent = {
+        ...mockAgent,
+        status: "stopped",
+        name: "Test Agent",
+        endpoint: "/invoke/test-agent",
+        pythonVersion: "3.12",
+        entrypoint: "main.py",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([updatedAgent]),
+          }),
         }),
       });
       vi.mocked(db.update).mockImplementation(mockUpdate);
 
-      await runner.stop(mockAgent.slug);
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
 
+      const response = await handleStopAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
       expect(runner.stop).toHaveBeenCalledWith("test-agent");
+      expect(body.message).toBe("Agent stopped successfully");
     });
   });
 });

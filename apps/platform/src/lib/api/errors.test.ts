@@ -9,6 +9,10 @@ import {
   ValidationError,
 } from "./errors";
 
+vi.mock("@/lib/logger", () => ({
+  logger: { error: vi.fn() },
+}));
+
 describe("ApiError", () => {
   it("sets statusCode, code, and message", () => {
     const error = new ApiError(418, "TEAPOT", "I'm a teapot");
@@ -108,11 +112,6 @@ describe("errorResponse", () => {
   });
 
   it("returns 500 for unknown errors", async () => {
-    // Mock logger to avoid console output
-    vi.mock("@/lib/logger", () => ({
-      logger: { error: vi.fn() },
-    }));
-
     const error = new Error("Something unexpected");
     const response = errorResponse(error);
 

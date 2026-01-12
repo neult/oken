@@ -169,15 +169,11 @@ describe("requireAuth", () => {
       const apiKey = "ok_testkey12345678901234567890ab";
       const expectedHash = hashApiKey(apiKey);
 
-      let capturedWhere: unknown;
       const mockSelect = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockImplementation((condition) => {
-              capturedWhere = condition;
-              return {
-                limit: vi.fn().mockResolvedValue([]),
-              };
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
             }),
           }),
         }),
