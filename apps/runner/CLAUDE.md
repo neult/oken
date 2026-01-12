@@ -17,7 +17,7 @@ task lint:runner       # Lint and type check
 task format:runner     # Format code
 
 # Testing
-task test:runner       # Run all tests
+task test:runner       # Run unit tests
 task test:runner:cov   # Run tests with coverage
 
 # Dependencies

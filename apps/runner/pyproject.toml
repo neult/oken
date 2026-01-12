@@ -40,9 +40,6 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
-markers = [
-    "integration: marks tests as integration tests (require Docker)",
-]
 
 [project.scripts]
 oken-runner = "oken_runner.server:app"
