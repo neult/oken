@@ -284,6 +284,86 @@ describe("Agent API Routes", () => {
       expect(response.status).toBe(400);
       expect(body.code).toBe("VALIDATION_ERROR");
     });
+
+    it("returns 502 when runner.deploy throws RunnerError", async () => {
+      const { RunnerError } = await import("@/lib/runner");
+
+      const mockAgent = {
+        id: "agent-1",
+        name: "Test Agent",
+        slug: "test-agent",
+        status: "deploying",
+        userId: mockUser.id,
+        pythonVersion: "3.12",
+        entrypoint: "main.py",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockDeployment = {
+        id: "deploy-1",
+        agentId: "agent-1",
+        status: "pending",
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const mockInsert = vi.fn()
+        .mockReturnValueOnce({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        })
+        .mockReturnValueOnce({
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockDeployment]),
+          }),
+        });
+      vi.mocked(db.insert).mockImplementation(mockInsert);
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      vi.mocked(runner.deploy).mockRejectedValue(
+        new RunnerError("Runner unavailable", 502)
+      );
+
+      const mockFile = {
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(12)),
+      };
+      const mockFormData = {
+        get: vi.fn((key: string) => {
+          if (key === "name") return "Test Agent";
+          if (key === "slug") return "test-agent";
+          if (key === "tarball") return mockFile;
+          return null;
+        }),
+      };
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+
+      const response = await handleCreateAgent(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(502);
+      expect(body.code).toBe("RUNNER_ERROR");
+      expect(body.error).toBe("Runner unavailable");
+    });
   });
 
   describe("GET /api/agents/:slug", () => {
@@ -525,6 +605,43 @@ describe("Agent API Routes", () => {
       expect(body.code).toBe("VALIDATION_ERROR");
       expect(body.error).toContain("not running");
     });
+
+    it("returns 502 when runner.invoke throws RunnerError", async () => {
+      const { RunnerError } = await import("@/lib/runner");
+
+      const mockAgent = {
+        id: "agent-1",
+        slug: "test-agent",
+        status: "running",
+        userId: mockUser.id,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      vi.mocked(runner.invoke).mockRejectedValue(
+        new RunnerError("Agent execution failed", 502)
+      );
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+        body: { input: { query: "test" } },
+      });
+
+      const response = await handleInvokeAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(502);
+      expect(body.code).toBe("RUNNER_ERROR");
+      expect(body.error).toBe("Agent execution failed");
+    });
   });
 
   describe("POST /api/agents/:slug/stop", () => {
@@ -630,6 +747,42 @@ describe("Agent API Routes", () => {
       expect(response.status).toBe(400);
       expect(body.code).toBe("VALIDATION_ERROR");
       expect(body.error).toContain("not running");
+    });
+
+    it("returns 502 when runner.stop throws RunnerError", async () => {
+      const { RunnerError } = await import("@/lib/runner");
+
+      const mockAgent = {
+        id: "agent-1",
+        slug: "test-agent",
+        status: "running",
+        userId: mockUser.id,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockAgent]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      vi.mocked(runner.stop).mockRejectedValue(
+        new RunnerError("Failed to stop agent", 502)
+      );
+
+      const request = createMockRequest({
+        method: "POST",
+        headers: { Authorization: "Bearer ok_testkey123456789012345678" },
+      });
+
+      const response = await handleStopAgent(request, "test-agent");
+      const body = await response.json();
+
+      expect(response.status).toBe(502);
+      expect(body.code).toBe("RUNNER_ERROR");
+      expect(body.error).toBe("Failed to stop agent");
     });
   });
 });
