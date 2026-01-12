@@ -145,3 +145,9 @@ tasks:
     dir: apps/platform
     cmds:
       - bun run test
+
+  test:platform:cov:
+    desc: "[test] Platform - with coverage"
+    dir: apps/platform
+    cmds:
+      - bunx vitest run --coverage
