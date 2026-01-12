@@ -122,18 +122,6 @@ tasks:
     cmds:
       - uv run pytest
 
-  test:runner:unit:
-    desc: "[test] Runner - unit only (no Docker)"
-    dir: apps/runner
-    cmds:
-      - uv run pytest -m "not integration"
-
-  test:runner:integration:
-    desc: "[test] Runner - integration (requires Docker)"
-    dir: apps/runner
-    cmds:
-      - uv run pytest -m integration
-
   test:runner:cov:
     desc: "[test] Runner - with coverage"
     dir: apps/runner
@@ -145,12 +133,6 @@ tasks:
     dir: apps/platform
     cmds:
       - bun run test
-
-  test:platform:integration:
-    desc: "[test] Platform - integration tests (requires Docker)"
-    dir: apps/platform
-    cmds:
-      - bunx vitest run --config vitest.integration.config.ts
 
   test:platform:cov:
     desc: "[test] Platform - with coverage"

@@ -19,7 +19,7 @@ task format:platform     # Format code
 task check:platform      # Format, lint, and organize imports
 
 # Testing
-task test:platform       # Run all tests
+task test:platform       # Run unit tests
 
 # Database
 task db:start            # Start local PostgreSQL (Docker)
