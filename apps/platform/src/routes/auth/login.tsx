@@ -41,7 +41,7 @@ function LoginPage() {
         return;
       }
 
-      navigate({ to: "/dashboard/agents" });
+      navigate({ to: "/agents" });
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
@@ -49,20 +49,16 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-white">Welcome back</CardTitle>
-          <CardDescription className="text-gray-400">
-            Sign in to your Oken account
-          </CardDescription>
+          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <CardDescription>Sign in to your Oken account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300">
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -70,38 +66,27 @@ function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-slate-900 border-slate-600 text-white placeholder:text-gray-500"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">
-                Password
-              </Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-slate-900 border-slate-600 text-white"
               />
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-destructive text-sm">{error}</p>}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Don't have an account?{" "}
-              <Link
-                to="/auth/signup"
-                className="text-cyan-400 hover:text-cyan-300"
-              >
+              <Link to="/auth/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
             </p>

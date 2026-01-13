@@ -43,7 +43,7 @@ function SignupPage() {
         return;
       }
 
-      navigate({ to: "/dashboard/agents" });
+      navigate({ to: "/agents" });
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
@@ -51,20 +51,16 @@ function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-white">Create account</CardTitle>
-          <CardDescription className="text-gray-400">
-            Get started with Oken
-          </CardDescription>
+          <CardTitle className="text-2xl">Create account</CardTitle>
+          <CardDescription>Get started with Oken</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-300">
-                Name
-              </Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -72,13 +68,10 @@ function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="bg-slate-900 border-slate-600 text-white placeholder:text-gray-500"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300">
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -86,13 +79,10 @@ function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-slate-900 border-slate-600 text-white placeholder:text-gray-500"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300">
-                Password
-              </Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -100,26 +90,20 @@ function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="bg-slate-900 border-slate-600 text-white"
               />
-              <p className="text-gray-500 text-xs">Minimum 8 characters</p>
+              <p className="text-muted-foreground text-xs">
+                Minimum 8 characters
+              </p>
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-destructive text-sm">{error}</p>}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create account"}
             </Button>
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Already have an account?{" "}
-              <Link
-                to="/auth/login"
-                className="text-cyan-400 hover:text-cyan-300"
-              >
+              <Link to="/auth/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>
