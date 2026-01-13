@@ -2,9 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
-import { Bot, ExternalLink } from "lucide-react";
+import { Bot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -91,24 +90,13 @@ function AgentsPage() {
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot size={64} className="text-muted-foreground mb-4" />
         <h2 className="text-2xl font-semibold mb-2">No agents yet</h2>
-        <p className="text-muted-foreground mb-6 max-w-md">
+        <p className="text-muted-foreground max-w-md">
           Deploy your first AI agent using the CLI. Run{" "}
           <code className="bg-muted px-2 py-1 rounded text-primary">
             oken deploy
           </code>{" "}
           in your agent directory.
         </p>
-        <Button variant="outline" asChild>
-          <a
-            href="https://docs.oken.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2"
-          >
-            View Documentation
-            <ExternalLink size={16} />
-          </a>
-        </Button>
       </div>
     );
   }

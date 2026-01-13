@@ -56,21 +56,12 @@ function HomePage() {
             One CLI command, get a URL. Deploy Python AI agents without managing
             infrastructure.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <div className="flex items-center justify-center mb-12">
             <Link to="/auth/signup">
               <Button size="lg" className="px-8">
                 Start Deploying
               </Button>
             </Link>
-            <a
-              href="https://docs.oken.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="lg" variant="outline" className="px-8">
-                Documentation
-              </Button>
-            </a>
           </div>
           <div className="bg-card rounded-lg p-4 max-w-lg mx-auto border">
             <code className="text-sm">
@@ -81,7 +72,9 @@ function HomePage() {
                 Deploying my-agent...
               </span>
               <br />
-              <span className="text-green-500">https://my-agent.oken.dev</span>
+              <span className="text-green-500">
+                https://&lt;your-endpoint&gt;/invoke
+              </span>
             </code>
           </div>
         </div>
