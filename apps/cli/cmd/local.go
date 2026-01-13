@@ -66,7 +66,7 @@ func findComposePath() (string, error) {
 		dir = parent
 	}
 
-	return "", fmt.Errorf("docker-compose.yml not found\nRun this command from the oken repo root")
+	return "", fmt.Errorf("oken repo not found\n\nTo self-host Oken, clone the repo and run from there:\n  git clone https://github.com/neult/oken.git\n  cd oken\n  oken local start")
 }
 
 func runLocalStart(cmd *cobra.Command, args []string) error {
