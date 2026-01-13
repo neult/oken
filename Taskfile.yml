@@ -67,6 +67,12 @@ tasks:
   # ====================
   # Lint
   # ====================
+  lint:cli:
+    desc: "[lint] CLI - golangci-lint"
+    dir: apps/cli
+    cmds:
+      - golangci-lint run
+
   lint:runner:
     desc: "[lint] Runner - ruff + ty"
     dir: apps/runner
@@ -83,6 +89,12 @@ tasks:
   # ====================
   # Format
   # ====================
+  format:cli:
+    desc: "[format] CLI - golangci-lint"
+    dir: apps/cli
+    cmds:
+      - golangci-lint fmt
+
   format:runner:
     desc: "[format] Runner - ruff"
     dir: apps/runner
@@ -99,6 +111,13 @@ tasks:
   # ====================
   # Check (lint + format)
   # ====================
+  check:cli:
+    desc: "[check] CLI - lint + format check"
+    dir: apps/cli
+    cmds:
+      - golangci-lint run
+      - golangci-lint fmt --diff
+
   check:runner:
     desc: "[check] Runner - lint, type-check, format"
     dir: apps/runner
@@ -116,6 +135,19 @@ tasks:
   # ====================
   # Test
   # ====================
+  test:cli:
+    desc: "[test] CLI - all tests"
+    dir: apps/cli
+    cmds:
+      - go test ./...
+
+  test:cli:cov:
+    desc: "[test] CLI - with coverage"
+    dir: apps/cli
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
   test:runner:
     desc: "[test] Runner - all tests"
     dir: apps/runner
