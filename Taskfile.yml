@@ -24,6 +24,12 @@ tasks:
     cmds:
       - uv run fastapi dev src/oken_runner/server.py
 
+  dev:docs:
+    desc: "[dev] Run docs on :4321"
+    dir: apps/docs
+    cmds:
+      - bun run dev
+
   # ====================
   # Build
   # ====================
@@ -36,6 +42,12 @@ tasks:
   build:platform:
     desc: "[build] Build platform for production"
     dir: apps/platform
+    cmds:
+      - bun run build
+
+  build:docs:
+    desc: "[build] Build docs for production"
+    dir: apps/docs
     cmds:
       - bun run build
 
