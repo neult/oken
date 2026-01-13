@@ -16,4 +16,4 @@ COPY --from=install /temp/dev/node_modules node_modules
 COPY apps/platform/ .
 
 EXPOSE 3000
-CMD ["bun", "run", "dev", "--host", "0.0.0.0"]
+CMD ["sh", "-c", "bunx drizzle-kit migrate && bun run dev --host 0.0.0.0"]
