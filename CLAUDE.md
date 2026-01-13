@@ -2,6 +2,15 @@
 
 AI agent deployment platform. One CLI command, get a URL.
 
+## Component Docs
+
+See CLAUDE.md in each app for component-specific details:
+
+- `apps/cli/CLAUDE.md` - CLI commands, structure, API client
+- `apps/platform/CLAUDE.md` - API routes, database schema, auth
+- `apps/runner/CLAUDE.md` - Agent execution, Docker, entrypoint types
+- `apps/docs/CLAUDE.md` - Documentation site
+
 ## Task Runner
 
 This repo uses [Task](https://taskfile.dev) as a task runner. Commands are defined in `Taskfile.yml` at the repo root.
@@ -13,10 +22,12 @@ This repo uses [Task](https://taskfile.dev) as a task runner. Commands are defin
 task dev:cli        # Run CLI (Go)
 task dev:platform   # Run platform on :3000 (TanStack Start)
 task dev:runner     # Run runner on :8000 (FastAPI)
+task dev:docs       # Run docs on :4321 (Astro Starlight)
 
 # Build
 task build:cli      # Build CLI binary to apps/cli/oken
 task build:platform # Build platform for production
+task build:docs     # Build docs for production
 
 # Database
 task db:generate    # Generate Drizzle migrations
