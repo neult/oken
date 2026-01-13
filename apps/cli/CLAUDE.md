@@ -34,6 +34,7 @@ cmd/
   invoke.go    # oken invoke <agent>
   logs.go      # oken logs <agent> [-f] - view/stream logs
   secrets.go   # oken secrets set/list/delete - manage secrets
+  local.go     # oken local start/stop - local dev environment
 internal/
   api/
     client.go  # HTTP client with auth
