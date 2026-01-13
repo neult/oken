@@ -152,7 +152,8 @@ describe("Agent API Routes", () => {
       vi.mocked(db.select).mockImplementation(mockSelect);
 
       // Mock db.insert for agent and deployment
-      const mockInsert = vi.fn()
+      const mockInsert = vi
+        .fn()
         .mockReturnValueOnce({
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue([mockAgent]),
@@ -196,7 +197,9 @@ describe("Agent API Routes", () => {
         method: "POST",
         headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+      vi.spyOn(request, "formData").mockResolvedValue(
+        mockFormData as unknown as FormData
+      );
 
       const response = await handleCreateAgent(request);
       const body = await response.json();
@@ -222,7 +225,8 @@ describe("Agent API Routes", () => {
         get: vi.fn((key: string) => {
           if (key === "name") return "Test Agent";
           if (key === "slug") return "existing-slug";
-          if (key === "tarball") return new File(["test content"], "agent.tar.gz");
+          if (key === "tarball")
+            return new File(["test content"], "agent.tar.gz");
           return null;
         }),
       };
@@ -231,7 +235,9 @@ describe("Agent API Routes", () => {
         method: "POST",
         headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+      vi.spyOn(request, "formData").mockResolvedValue(
+        mockFormData as unknown as FormData
+      );
 
       const response = await handleCreateAgent(request);
       const body = await response.json();
@@ -253,7 +259,9 @@ describe("Agent API Routes", () => {
         method: "POST",
         headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+      vi.spyOn(request, "formData").mockResolvedValue(
+        mockFormData as unknown as FormData
+      );
 
       const response = await handleCreateAgent(request);
       const body = await response.json();
@@ -267,7 +275,8 @@ describe("Agent API Routes", () => {
         get: vi.fn((key: string) => {
           if (key === "name") return "";
           if (key === "slug") return "INVALID-UPPERCASE";
-          if (key === "tarball") return new File(["test content"], "agent.tar.gz");
+          if (key === "tarball")
+            return new File(["test content"], "agent.tar.gz");
           return null;
         }),
       };
@@ -276,7 +285,9 @@ describe("Agent API Routes", () => {
         method: "POST",
         headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+      vi.spyOn(request, "formData").mockResolvedValue(
+        mockFormData as unknown as FormData
+      );
 
       const response = await handleCreateAgent(request);
       const body = await response.json();
@@ -315,7 +326,8 @@ describe("Agent API Routes", () => {
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const mockInsert = vi.fn()
+      const mockInsert = vi
+        .fn()
         .mockReturnValueOnce({
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue([mockAgent]),
@@ -355,7 +367,9 @@ describe("Agent API Routes", () => {
         method: "POST",
         headers: { Authorization: "Bearer ok_testkey123456789012345678" },
       });
-      vi.spyOn(request, "formData").mockResolvedValue(mockFormData as unknown as FormData);
+      vi.spyOn(request, "formData").mockResolvedValue(
+        mockFormData as unknown as FormData
+      );
 
       const response = await handleCreateAgent(request);
       const body = await response.json();

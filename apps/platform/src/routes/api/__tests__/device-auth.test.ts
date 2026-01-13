@@ -355,7 +355,11 @@ describe("Device Auth API Routes", () => {
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ ...pendingSession, status: "approved", userId: mockUser.id }]),
+            returning: vi
+              .fn()
+              .mockResolvedValue([
+                { ...pendingSession, status: "approved", userId: mockUser.id },
+              ]),
           }),
         }),
       });
