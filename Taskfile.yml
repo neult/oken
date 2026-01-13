@@ -31,6 +31,29 @@ tasks:
       - bun run dev
 
   # ====================
+  # Local (Docker)
+  # ====================
+  local:start:
+    desc: "[local] Start all services (postgres, platform, runner)"
+    cmds:
+      - docker compose -f infra/docker-compose.yml up -d
+
+  local:start:build:
+    desc: "[local] Start all services with rebuild"
+    cmds:
+      - docker compose -f infra/docker-compose.yml up -d --build
+
+  local:stop:
+    desc: "[local] Stop all services"
+    cmds:
+      - docker compose -f infra/docker-compose.yml down
+
+  local:logs:
+    desc: "[local] View logs from all services"
+    cmds:
+      - docker compose -f infra/docker-compose.yml logs -f
+
+  # ====================
   # Build
   # ====================
   build:cli:

@@ -18,7 +18,13 @@ This repo uses [Task](https://taskfile.dev) as a task runner. Commands are defin
 ## Quick Reference
 
 ```bash
-# Development
+# Local Environment (Docker)
+task local:start       # Start all services (postgres, platform, runner)
+task local:start:build # Start with image rebuild
+task local:stop        # Stop all services
+task local:logs        # View logs from all services
+
+# Development (individual services)
 task dev:cli        # Run CLI (Go)
 task dev:platform   # Run platform on :3000 (TanStack Start)
 task dev:runner     # Run runner on :8000 (FastAPI)
@@ -33,6 +39,21 @@ task build:docs     # Build docs for production
 task db:generate    # Generate Drizzle migrations
 task db:migrate     # Run migrations
 ```
+
+## Self-Hosting
+
+To run Oken locally:
+
+```bash
+git clone https://github.com/neult/oken.git
+cd oken
+task local:start    # or: oken local start
+```
+
+Services will be available at:
+- Platform: http://localhost:3000
+- Runner: http://localhost:8000
+- Postgres: localhost:5432
 
 ## Architecture
 
