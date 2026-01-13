@@ -225,9 +225,18 @@ function SettingsPage() {
               </CardTitle>
               <CardDescription>Keys for CLI authentication</CardDescription>
             </div>
-            <Dialog open={isCreateOpen} onOpenChange={handleCloseDialog}>
+            <Dialog
+              open={isCreateOpen}
+              onOpenChange={(open) => {
+                if (open) {
+                  setIsCreateOpen(true);
+                } else {
+                  handleCloseDialog();
+                }
+              }}
+            >
               <DialogTrigger asChild>
-                <Button onClick={() => setIsCreateOpen(true)}>
+                <Button>
                   <Plus size={16} className="mr-2" />
                   Create Key
                 </Button>
