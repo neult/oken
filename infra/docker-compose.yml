@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: oken-postgres
+    environment:
+      POSTGRES_USER: oken
+      POSTGRES_PASSWORD: oken
+      POSTGRES_DB: oken
+    ports:
+      - "5432:5432"
+    volumes:
+      - oken-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oken"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  platform:
+    build:
+      context: ..
+      dockerfile: infra/platform.Dockerfile
+    container_name: oken-platform
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://oken:oken@postgres:5432/oken
+      BETTER_AUTH_SECRET: local-dev-secret-change-in-prod
+      RUNNER_URL: http://runner:8000
+      PLATFORM_URL: http://localhost:3000
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  runner:
+    build:
+      context: ..
+      dockerfile: infra/runner.Dockerfile
+    container_name: oken-runner
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - postgres
+
+volumes:
+  oken-postgres-data:
