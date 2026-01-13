@@ -5,14 +5,16 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { ThemeProvider } from "@/components/theme-provider";
+import { getThemeServerFn } from "@/lib/theme";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   notFoundComponent: () => (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-white mb-4">404</h1>
-        <p className="text-gray-400">Page not found</p>
+        <h1 className="text-4xl font-bold mb-4">404</h1>
+        <p className="text-muted-foreground">Page not found</p>
       </div>
     </div>
   ),
@@ -36,18 +38,23 @@ export const Route = createRootRoute({
       },
     ],
   }),
-
+  loader: () => getThemeServerFn(),
   component: RootDocument,
 });
 
 function RootDocument() {
+  const theme = Route.useLoaderData();
+  const initialClass = theme === "system" ? "" : theme;
+
   return (
-    <html lang="en">
+    <html lang="en" className={initialClass} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="bg-slate-900">
-        <Outlet />
+      <body className="bg-background text-foreground">
+        <ThemeProvider theme={theme}>
+          <Outlet />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
