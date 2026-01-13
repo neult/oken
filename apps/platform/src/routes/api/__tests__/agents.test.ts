@@ -141,12 +141,18 @@ describe("Agent API Routes", () => {
         status: "pending",
       };
 
-      // Mock db.select for slug check (not found)
+      // Mock db.select for slug check (not found) and secrets fetch (empty)
+      // The where() result needs to be both thenable AND have .limit()
+      const createWhereResult = () => {
+        const result = Promise.resolve([]);
+        (
+          result as Promise<unknown[]> & { limit: () => Promise<unknown[]> }
+        ).limit = vi.fn().mockResolvedValue([]);
+        return result;
+      };
       const mockSelect = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
-          }),
+          where: vi.fn().mockImplementation(() => createWhereResult()),
         }),
       });
       vi.mocked(db.select).mockImplementation(mockSelect);
@@ -317,11 +323,18 @@ describe("Agent API Routes", () => {
         status: "pending",
       };
 
+      // Mock db.select for slug check (not found) and secrets fetch (empty)
+      // The where() result needs to be both thenable AND have .limit()
+      const createWhereResult = () => {
+        const result = Promise.resolve([]);
+        (
+          result as Promise<unknown[]> & { limit: () => Promise<unknown[]> }
+        ).limit = vi.fn().mockResolvedValue([]);
+        return result;
+      };
       const mockSelect = vi.fn().mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
-          }),
+          where: vi.fn().mockImplementation(() => createWhereResult()),
         }),
       });
       vi.mocked(db.select).mockImplementation(mockSelect);

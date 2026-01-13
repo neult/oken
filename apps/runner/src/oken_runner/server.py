@@ -7,6 +7,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Annotated
 
+from docker.errors import NotFound as ContainerNotFound
 from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
@@ -304,9 +305,12 @@ async def get_logs(
                 container = docker.client.containers.get(agent.container_id)
                 for line in container.logs(stream=True, follow=True, tail=tail):
                     yield f"data: {line.decode('utf-8', errors='replace')}\n\n"
+            except ContainerNotFound:
+                logger.error(f"Container not found for agent {agent_id}")
+                yield "event: error\ndata: Container not found\n\n"
             except Exception as e:
                 logger.error(f"Log streaming error for {agent_id}: {e}")
-                yield f"data: [error: {e}]\n\n"
+                yield f"event: error\ndata: Log streaming failed: {e}\n\n"
 
         return StreamingResponse(
             log_stream(),
@@ -319,7 +323,9 @@ async def get_logs(
     else:
         # Return logs as plain text
         logs = docker.get_container_logs(agent.container_id, tail=tail)
-        return {"logs": logs or ""}
+        if logs is None:
+            raise AgentNotRunningError(agent_id, "container not found")
+        return {"logs": logs}
 
 
 # Regex pattern for valid agent IDs: alphanumeric, hyphens, underscores only

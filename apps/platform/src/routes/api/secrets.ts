@@ -239,7 +239,14 @@ export async function handleDeleteSecret(request: Request): Promise<Response> {
           isNull(secrets.agentId)
         );
 
-    await db.delete(secrets).where(deleteCondition);
+    const deleted = await db
+      .delete(secrets)
+      .where(deleteCondition)
+      .returning({ id: secrets.id });
+
+    if (deleted.length === 0) {
+      throw new NotFoundError("Secret");
+    }
 
     return Response.json({ message: "Secret deleted", name });
   } catch (error) {
@@ -268,11 +275,25 @@ export async function getSecretsForAgent(
   const result: Record<string, string> = {};
 
   for (const s of userSecrets) {
-    result[s.name] = decrypt(s.value);
+    try {
+      result[s.name] = decrypt(s.value);
+    } catch (error) {
+      console.error(`Failed to decrypt user-level secret "${s.name}":`, error);
+      throw new Error(
+        `Failed to decrypt secret "${s.name}". The secret may be corrupted or the encryption key may have changed.`
+      );
+    }
   }
 
   for (const s of agentSecrets) {
-    result[s.name] = decrypt(s.value);
+    try {
+      result[s.name] = decrypt(s.value);
+    } catch (error) {
+      console.error(`Failed to decrypt agent secret "${s.name}":`, error);
+      throw new Error(
+        `Failed to decrypt secret "${s.name}". The secret may be corrupted or the encryption key may have changed.`
+      );
+    }
   }
 
   return result;

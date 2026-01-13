@@ -76,7 +76,11 @@ func fetchLogs(client *api.Client, slug string) error {
 }
 
 func streamLogs(client *api.Client, cfg *config.Config, slug string) error {
-	url := client.GetAgentLogsStreamURL(slug, logsTail)
+	url, err := client.GetAgentLogsStreamURL(slug, logsTail)
+	if err != nil {
+		ui.Error("Invalid agent slug: %v", err)
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

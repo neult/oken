@@ -37,9 +37,21 @@ export async function handleGetLogs(
       const runnerRes = await fetch(streamUrl);
 
       if (!runnerRes.ok) {
-        const error = await runnerRes.json().catch(() => ({}));
+        let errorMessage = "Failed to stream logs";
+        try {
+          const error = await runnerRes.json();
+          if (error.error) {
+            errorMessage = error.error;
+          }
+        } catch (parseError) {
+          // Runner returned non-JSON response
+          console.error(
+            `Failed to parse runner error response for agent ${slug}:`,
+            parseError
+          );
+        }
         return Response.json(
-          { error: error.error ?? "Failed to stream logs" },
+          { error: errorMessage },
           { status: runnerRes.status }
         );
       }

@@ -220,6 +220,9 @@ func (c *Client) GetAgentLogs(slug string, tail int) (*LogsResponse, error) {
 }
 
 // GetAgentLogsStreamURL returns the URL for streaming logs
-func (c *Client) GetAgentLogsStreamURL(slug string, tail int) string {
-	return fmt.Sprintf("%s/api/agents/%s/logs?follow=true&tail=%d", c.BaseURL, slug, tail)
+func (c *Client) GetAgentLogsStreamURL(slug string, tail int) (string, error) {
+	if err := validateSlug(slug); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/api/agents/%s/logs?follow=true&tail=%d", c.BaseURL, slug, tail), nil
 }
