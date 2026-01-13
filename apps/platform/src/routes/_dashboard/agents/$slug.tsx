@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, eq } from "drizzle-orm";
 import {
   ArrowLeft,
@@ -50,7 +51,7 @@ const getAgent = createServerFn({ method: "GET" })
   .inputValidator((slug: string) => slug)
   .handler(async ({ data: slug }): Promise<Agent | null> => {
     const session = await auth.api.getSession({
-      headers: new Headers(),
+      headers: getRequestHeaders(),
     });
 
     if (!session?.user) {
@@ -199,11 +200,7 @@ function getStatusBadge(status: string) {
     case "running":
       return <Badge className="bg-green-600 hover:bg-green-700">Running</Badge>;
     case "stopped":
-      return (
-        <Badge variant="secondary" className="bg-slate-600">
-          Stopped
-        </Badge>
-      );
+      return <Badge variant="secondary">Stopped</Badge>;
     case "deploying":
       return (
         <Badge className="bg-yellow-600 hover:bg-yellow-700">Deploying</Badge>
@@ -247,15 +244,13 @@ function AgentDetailPage() {
   if (!agent) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <h2 className="text-2xl font-semibold text-white mb-2">
-          Agent not found
-        </h2>
-        <p className="text-gray-400 mb-6">
+        <h2 className="text-2xl font-semibold mb-2">Agent not found</h2>
+        <p className="text-muted-foreground mb-6">
           The agent you're looking for doesn't exist or you don't have access to
           it.
         </p>
-        <Link to="/dashboard/agents">
-          <Button variant="outline" className="border-slate-600 text-gray-300">
+        <Link to="/agents">
+          <Button variant="outline">
             <ArrowLeft size={16} className="mr-2" />
             Back to Agents
           </Button>
@@ -277,7 +272,7 @@ function AgentDetailPage() {
     setActionLoading(true);
     const result = await deleteAgent({ data: agent.slug });
     if (result.success) {
-      navigate({ to: "/dashboard/agents" });
+      navigate({ to: "/agents" });
     }
     setActionLoading(false);
   };
@@ -285,24 +280,21 @@ function AgentDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link to="/dashboard/agents">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-400 hover:text-white"
-          >
+        <Link to="/agents">
+          <Button variant="ghost" size="icon">
             <ArrowLeft size={20} />
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-white">{agent.name}</h1>
-          <p className="text-gray-400 font-mono text-sm">{agent.slug}</p>
+          <h1 className="text-2xl font-bold">{agent.name}</h1>
+          <p className="text-muted-foreground font-mono text-sm">
+            {agent.slug}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {currentStatus === "running" && (
             <Button
               variant="outline"
-              className="border-slate-600 text-gray-300 hover:bg-slate-700"
               onClick={handleStop}
               disabled={actionLoading}
             >
@@ -314,30 +306,26 @@ function AgentDetailPage() {
             <AlertDialogTrigger asChild>
               <Button
                 variant="outline"
-                className="border-red-800 text-red-400 hover:bg-red-900/50"
+                className="border-destructive text-destructive hover:bg-destructive/10"
                 disabled={actionLoading}
               >
                 <Trash2 size={16} className="mr-2" />
                 Delete
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-slate-800 border-slate-700">
+            <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">
-                  Delete Agent
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-400">
+                <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                <AlertDialogDescription>
                   Are you sure you want to delete <strong>{agent.name}</strong>?
                   This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="bg-slate-700 border-slate-600 text-gray-300 hover:bg-slate-600">
-                  Cancel
-                </AlertDialogCancel>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete
                 </AlertDialogAction>
@@ -348,16 +336,16 @@ function AgentDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white text-lg">Status</CardTitle>
+            <CardTitle className="text-lg">Status</CardTitle>
           </CardHeader>
           <CardContent>{getStatusBadge(currentStatus)}</CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white text-lg">Endpoint</CardTitle>
+            <CardTitle className="text-lg">Endpoint</CardTitle>
           </CardHeader>
           <CardContent>
             {agent.endpoint ? (
@@ -365,43 +353,40 @@ function AgentDetailPage() {
                 href={agent.endpoint}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 font-mono text-sm flex items-center gap-1"
+                className="text-primary hover:underline font-mono text-sm flex items-center gap-1"
               >
                 {agent.endpoint}
                 <ExternalLink size={14} />
               </a>
             ) : (
-              <span className="text-gray-500">Not available</span>
+              <span className="text-muted-foreground">Not available</span>
             )}
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white text-lg">Entrypoint</CardTitle>
+            <CardTitle className="text-lg">Entrypoint</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="text-gray-300 font-mono text-sm">
+            <span className="font-mono text-sm">
               {agent.entrypoint || "Auto-detected"}
             </span>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-white">Logs</CardTitle>
-            <CardDescription className="text-gray-400">
-              Recent output from your agent
-            </CardDescription>
+            <CardTitle>Logs</CardTitle>
+            <CardDescription>Recent output from your agent</CardDescription>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => fetchLogs(agent.slug)}
             disabled={logsLoading}
-            className="text-gray-400 hover:text-white"
           >
             <RefreshCw
               size={16}
@@ -410,16 +395,16 @@ function AgentDetailPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="bg-slate-900 rounded-lg p-4 h-80 overflow-auto font-mono text-sm">
+          <div className="bg-muted rounded-lg p-4 h-80 overflow-auto font-mono text-sm">
             {logsLoading && logs.length === 0 ? (
-              <div className="text-gray-500">Loading logs...</div>
+              <div className="text-muted-foreground">Loading logs...</div>
             ) : logs.length === 0 ? (
-              <div className="text-gray-500">No logs available</div>
+              <div className="text-muted-foreground">No logs available</div>
             ) : (
               <>
                 {logs.map((line, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: log lines are append-only
-                  <div key={i} className="text-gray-300 whitespace-pre-wrap">
+                  <div key={i} className="whitespace-pre-wrap">
                     {line}
                   </div>
                 ))}

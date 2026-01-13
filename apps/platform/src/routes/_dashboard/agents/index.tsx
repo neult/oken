@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { Bot, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,7 @@ interface Agent {
 const getAgents = createServerFn({ method: "GET" }).handler(
   async (): Promise<Agent[]> => {
     const session = await auth.api.getSession({
-      headers: new Headers(),
+      headers: getRequestHeaders(),
     });
 
     if (!session?.user) {
@@ -70,11 +71,7 @@ function getStatusBadge(status: string) {
     case "running":
       return <Badge className="bg-green-600 hover:bg-green-700">Running</Badge>;
     case "stopped":
-      return (
-        <Badge variant="secondary" className="bg-slate-600">
-          Stopped
-        </Badge>
-      );
+      return <Badge variant="secondary">Stopped</Badge>;
     case "deploying":
       return (
         <Badge className="bg-yellow-600 hover:bg-yellow-700">Deploying</Badge>
@@ -92,18 +89,16 @@ function AgentsPage() {
   if (agentsList.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <Bot size={64} className="text-gray-600 mb-4" />
-        <h2 className="text-2xl font-semibold text-white mb-2">
-          No agents yet
-        </h2>
-        <p className="text-gray-400 mb-6 max-w-md">
+        <Bot size={64} className="text-muted-foreground mb-4" />
+        <h2 className="text-2xl font-semibold mb-2">No agents yet</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
           Deploy your first AI agent using the CLI. Run{" "}
-          <code className="bg-slate-800 px-2 py-1 rounded text-cyan-400">
+          <code className="bg-muted px-2 py-1 rounded text-primary">
             oken deploy
           </code>{" "}
           in your agent directory.
         </p>
-        <Button variant="outline" className="border-slate-600 text-gray-300">
+        <Button variant="outline" asChild>
           <a
             href="https://docs.oken.dev"
             target="_blank"
@@ -122,15 +117,17 @@ function AgentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agents</h1>
-          <p className="text-gray-400">Manage your deployed AI agents</p>
+          <h1 className="text-2xl font-bold">Agents</h1>
+          <p className="text-muted-foreground">
+            Manage your deployed AI agents
+          </p>
         </div>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">All Agents</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle>All Agents</CardTitle>
+          <CardDescription>
             {agentsList.length} agent{agentsList.length !== 1 ? "s" : ""}{" "}
             deployed
           </CardDescription>
@@ -138,30 +135,27 @@ function AgentsPage() {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700 hover:bg-transparent">
-                <TableHead className="text-gray-400">Name</TableHead>
-                <TableHead className="text-gray-400">Slug</TableHead>
-                <TableHead className="text-gray-400">Status</TableHead>
-                <TableHead className="text-gray-400">Endpoint</TableHead>
-                <TableHead className="text-gray-400">Created</TableHead>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Endpoint</TableHead>
+                <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {agentsList.map((agent) => (
-                <TableRow
-                  key={agent.id}
-                  className="border-slate-700 hover:bg-slate-700/50 cursor-pointer"
-                >
+                <TableRow key={agent.id} className="cursor-pointer">
                   <TableCell>
                     <Link
-                      to="/dashboard/agents/$slug"
+                      to="/agents/$slug"
                       params={{ slug: agent.slug }}
-                      className="text-white font-medium hover:text-cyan-400"
+                      className="font-medium hover:text-primary"
                     >
                       {agent.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-gray-400 font-mono text-sm">
+                  <TableCell className="text-muted-foreground font-mono text-sm">
                     {agent.slug}
                   </TableCell>
                   <TableCell>{getStatusBadge(agent.status)}</TableCell>
@@ -171,17 +165,17 @@ function AgentsPage() {
                         href={agent.endpoint}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 text-sm font-mono flex items-center gap-1"
+                        className="text-primary hover:underline text-sm font-mono flex items-center gap-1"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {agent.endpoint}
                         <ExternalLink size={12} />
                       </a>
                     ) : (
-                      <span className="text-gray-500">-</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-gray-400 text-sm">
+                  <TableCell className="text-muted-foreground text-sm">
                     {new Date(agent.createdAt).toLocaleDateString()}
                   </TableCell>
                 </TableRow>
