@@ -8,6 +8,13 @@
       "when": 1768089733858,
       "tag": "0000_open_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768332311005,
+      "tag": "0001_add-auth-tables",
+      "breakpoints": true
     }
   ]
 }

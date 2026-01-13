@@ -1,14 +1,20 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-
-import Header from "../components/Header";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   notFoundComponent: () => (
-    <div className="p-8 text-center">Page not found</div>
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-white mb-4">404</h1>
+        <p className="text-gray-400">Page not found</p>
+      </div>
+    </div>
   ),
   head: () => ({
     meta: [
@@ -20,7 +26,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "Oken - AI Agent Deployment Platform",
       },
     ],
     links: [
@@ -31,29 +37,17 @@ export const Route = createRootRoute({
     ],
   }),
 
-  shellComponent: RootDocument,
+  component: RootDocument,
 });
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument() {
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body>
-        <Header />
-        {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+      <body className="bg-slate-900">
+        <Outlet />
         <Scripts />
       </body>
     </html>

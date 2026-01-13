@@ -1,118 +1,126 @@
-import { createFileRoute } from "@tanstack/react-router";
-import {
-  Route as RouteIcon,
-  Server,
-  Shield,
-  Sparkles,
-  Waves,
-  Zap,
-} from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Bot, Cloud, Terminal, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({ component: HomePage });
 
-function App() {
+function HomePage() {
   const features = [
     {
-      icon: <Zap className="w-12 h-12 text-cyan-400" />,
-      title: "Powerful Server Functions",
+      icon: <Terminal className="w-10 h-10 text-cyan-400" />,
+      title: "One Command Deploy",
       description:
-        "Write server-side code that seamlessly integrates with your client components. Type-safe, secure, and simple.",
+        "Deploy your AI agent with a single CLI command. No infrastructure setup required.",
     },
     {
-      icon: <Server className="w-12 h-12 text-cyan-400" />,
-      title: "Flexible Server Side Rendering",
+      icon: <Bot className="w-10 h-10 text-cyan-400" />,
+      title: "Any Python Agent",
       description:
-        "Full-document SSR, streaming, and progressive enhancement out of the box. Control exactly what renders where.",
+        "Support for LangChain, CrewAI, custom agents, and more. Auto-detects your entrypoint.",
     },
     {
-      icon: <RouteIcon className="w-12 h-12 text-cyan-400" />,
-      title: "API Routes",
+      icon: <Cloud className="w-10 h-10 text-cyan-400" />,
+      title: "Instant URL",
       description:
-        "Build type-safe API endpoints alongside your application. No separate backend needed.",
+        "Get a public endpoint for your agent immediately. Invoke via HTTP from anywhere.",
     },
     {
-      icon: <Shield className="w-12 h-12 text-cyan-400" />,
-      title: "Strongly Typed Everything",
+      icon: <Zap className="w-10 h-10 text-cyan-400" />,
+      title: "Built-in Secrets",
       description:
-        "End-to-end type safety from server to client. Catch errors before they reach production.",
-    },
-    {
-      icon: <Waves className="w-12 h-12 text-cyan-400" />,
-      title: "Full Streaming Support",
-      description:
-        "Stream data from server to client progressively. Perfect for AI applications and real-time updates.",
-    },
-    {
-      icon: <Sparkles className="w-12 h-12 text-cyan-400" />,
-      title: "Next Generation Ready",
-      description:
-        "Built from the ground up for modern web applications. Deploy anywhere JavaScript runs.",
+        "Securely manage API keys and environment variables. Encrypted at rest.",
     },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <header className="p-6 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="text-2xl font-bold text-white">Oken</div>
+        <div className="flex items-center gap-4">
+          <Link to="/auth/login">
+            <Button variant="ghost" className="text-gray-300 hover:text-white">
+              Sign in
+            </Button>
+          </Link>
+          <Link to="/auth/signup">
+            <Button className="bg-cyan-500 hover:bg-cyan-600 text-white">
+              Get Started
+            </Button>
+          </Link>
+        </div>
+      </header>
+
       <section className="relative py-20 px-6 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10"></div>
-        <div className="relative max-w-5xl mx-auto">
-          <div className="flex items-center justify-center gap-6 mb-6">
-            <img
-              src="/tanstack-circle-logo.png"
-              alt="TanStack Logo"
-              className="w-24 h-24 md:w-32 md:h-32"
-            />
-            <h1 className="text-6xl md:text-7xl font-black text-white [letter-spacing:-0.08em]">
-              <span className="text-gray-300">TANSTACK</span>{" "}
-              <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                START
-              </span>
-            </h1>
-          </div>
-          <p className="text-2xl md:text-3xl text-gray-300 mb-4 font-light">
-            The framework for next generation AI applications
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10" />
+        <div className="relative max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+            Deploy AI Agents{" "}
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              Instantly
+            </span>
+          </h1>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            One CLI command, get a URL. Deploy Python AI agents without managing
+            infrastructure.
           </p>
-          <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-8">
-            Full-stack framework powered by TanStack Router for React and Solid.
-            Build modern applications with server functions, streaming, and type
-            safety.
-          </p>
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+            <Link to="/auth/signup">
+              <Button
+                size="lg"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white px-8"
+              >
+                Start Deploying
+              </Button>
+            </Link>
             <a
-              href="https://tanstack.com/start"
+              href="https://docs.oken.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-500/50"
             >
-              Documentation
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-slate-600 text-gray-300 hover:bg-slate-800 px-8"
+              >
+                Documentation
+              </Button>
             </a>
-            <p className="text-gray-400 text-sm mt-2">
-              Begin your TanStack Start journey by editing{" "}
-              <code className="px-2 py-1 bg-slate-700 rounded text-cyan-400">
-                /src/routes/index.tsx
-              </code>
-            </p>
+          </div>
+          <div className="bg-slate-800/80 rounded-lg p-4 max-w-lg mx-auto border border-slate-700">
+            <code className="text-gray-300 text-sm">
+              <span className="text-gray-500">$</span>{" "}
+              <span className="text-cyan-400">oken</span> deploy
+              <br />
+              <span className="text-gray-500">Deploying my-agent...</span>
+              <br />
+              <span className="text-green-400">https://my-agent.oken.dev</span>
+            </code>
           </div>
         </div>
       </section>
 
-      <section className="py-16 px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="py-16 px-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
+              className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-colors"
             >
               <div className="mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-semibold text-white mb-3">
+              <h3 className="text-xl font-semibold text-white mb-2">
                 {feature.title}
               </h3>
-              <p className="text-gray-400 leading-relaxed">
-                {feature.description}
-              </p>
+              <p className="text-gray-400">{feature.description}</p>
             </div>
           ))}
         </div>
       </section>
+
+      <footer className="py-8 px-6 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
+          Oken - AI Agent Deployment Platform
+        </div>
+      </footer>
     </div>
   );
 }
