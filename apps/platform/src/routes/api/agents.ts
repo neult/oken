@@ -15,6 +15,7 @@ import {
 import { db } from "@/lib/db";
 import { agents, deployments } from "@/lib/db/schema";
 import { RunnerError, runner } from "@/lib/runner";
+import { getSecretsForAgent } from "./secrets";
 
 export async function handleListAgents(request: Request): Promise<Response> {
   try {
@@ -100,7 +101,11 @@ export async function handleCreateAgent(request: Request): Promise<Response> {
     // Forward to runner (use slug as agent_id)
     try {
       const tarballBuffer = await tarball.arrayBuffer();
-      const result = await runner.deploy(agent.slug, tarballBuffer);
+
+      // Fetch secrets for this agent (user-level + agent-specific)
+      const secrets = await getSecretsForAgent(user.id, agent.id);
+
+      const result = await runner.deploy(agent.slug, tarballBuffer, secrets);
 
       // Update agent with endpoint
       await db

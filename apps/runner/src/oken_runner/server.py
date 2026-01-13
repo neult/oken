@@ -7,8 +7,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 
 from .agent_registry import AgentRegistry
@@ -114,8 +114,15 @@ async def health():
 async def deploy(
     agent_id: Annotated[str, Form()],
     tarball: Annotated[UploadFile, File()],
+    secrets: Annotated[str | None, Form()] = None,
 ):
-    """Deploy an agent from a tarball."""
+    """Deploy an agent from a tarball.
+
+    Args:
+        agent_id: Unique identifier for the agent
+        tarball: Gzipped tarball containing agent code
+        secrets: JSON-encoded dict of secrets to inject as env vars
+    """
     settings: Settings = app.state.settings
     docker: DockerManager = app.state.docker
     registry: AgentRegistry = app.state.registry
@@ -124,6 +131,18 @@ async def deploy(
 
     # Validate agent_id to prevent path traversal
     _validate_agent_id(agent_id)
+
+    # Parse secrets if provided
+    env_vars: dict[str, str] = {}
+    if secrets:
+        try:
+            import json
+
+            env_vars = json.loads(secrets)
+            if not isinstance(env_vars, dict):
+                raise ConfigError("secrets must be a JSON object")
+        except json.JSONDecodeError as e:
+            raise ConfigError(f"Invalid secrets JSON: {e}") from e
 
     # Extract tarball to workspace
     workspace = Path(settings.data_dir) / "agents" / agent_id
@@ -158,9 +177,11 @@ async def deploy(
         await registry.update_status(agent_id, "error", str(e))
         raise
 
-    # Start container
+    # Start container with secrets as env vars
     try:
-        container_id, container_name = docker.start_container(agent_id, image_tag)
+        container_id, container_name = docker.start_container(
+            agent_id, image_tag, env=env_vars
+        )
         await registry.update_container(agent_id, container_id, container_name)
     except Exception as e:
         await registry.update_status(agent_id, "error", str(e))
@@ -251,6 +272,54 @@ async def list_agents():
             for a in agents
         ]
     }
+
+
+@app.get("/logs/{agent_id}")
+async def get_logs(
+    agent_id: str,
+    follow: Annotated[bool, Query()] = False,
+    tail: Annotated[int, Query(ge=1, le=10000)] = 100,
+):
+    """Get logs from a running agent container.
+
+    Args:
+        agent_id: The agent ID
+        follow: If true, stream logs in real-time (SSE)
+        tail: Number of lines to return (default 100, max 10000)
+    """
+    registry: AgentRegistry = app.state.registry
+    docker: DockerManager = app.state.docker
+
+    agent = await registry.get(agent_id)
+    if not agent:
+        raise AgentNotFoundError(agent_id)
+
+    if not agent.container_id:
+        raise AgentNotRunningError(agent_id, "no container")
+
+    if follow:
+        # Stream logs using SSE
+        async def log_stream():
+            try:
+                container = docker.client.containers.get(agent.container_id)
+                for line in container.logs(stream=True, follow=True, tail=tail):
+                    yield f"data: {line.decode('utf-8', errors='replace')}\n\n"
+            except Exception as e:
+                logger.error(f"Log streaming error for {agent_id}: {e}")
+                yield f"data: [error: {e}]\n\n"
+
+        return StreamingResponse(
+            log_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
+        )
+    else:
+        # Return logs as plain text
+        logs = docker.get_container_logs(agent.container_id, tail=tail)
+        return {"logs": logs or ""}
 
 
 # Regex pattern for valid agent IDs: alphanumeric, hyphens, underscores only

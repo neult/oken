@@ -36,6 +36,10 @@ export interface AgentListResponse {
   agents: AgentInfo[];
 }
 
+export interface LogsResponse {
+  logs: string;
+}
+
 export class RunnerError extends Error {
   constructor(
     message: string,
@@ -90,10 +94,17 @@ export class RunnerClient {
     return res.json();
   }
 
-  async deploy(agentId: string, tarball: ArrayBuffer): Promise<DeployResponse> {
+  async deploy(
+    agentId: string,
+    tarball: ArrayBuffer,
+    secrets?: Record<string, string>
+  ): Promise<DeployResponse> {
     const formData = new FormData();
     formData.append("agent_id", agentId);
     formData.append("tarball", new Blob([tarball]), "agent.tar.gz");
+    if (secrets && Object.keys(secrets).length > 0) {
+      formData.append("secrets", JSON.stringify(secrets));
+    }
 
     return this.request<DeployResponse>("/deploy", {
       method: "POST",
@@ -124,6 +135,14 @@ export class RunnerClient {
 
   async listAgents(): Promise<AgentListResponse> {
     return this.request<AgentListResponse>("/agents");
+  }
+
+  async logs(agentId: string, tail = 100): Promise<LogsResponse> {
+    return this.request<LogsResponse>(`/logs/${agentId}?tail=${tail}`);
+  }
+
+  logsStreamUrl(agentId: string, tail = 100): string {
+    return `${this.baseUrl}/logs/${agentId}?follow=true&tail=${tail}`;
   }
 }
 

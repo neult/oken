@@ -50,6 +50,8 @@ src/
       agents.$slug.ts     # GET/DELETE /api/agents/:slug
       agents.$slug.invoke.ts  # POST /api/agents/:slug/invoke
       agents.$slug.stop.ts    # POST /api/agents/:slug/stop
+      agents.$slug.logs.ts    # GET /api/agents/:slug/logs
+      secrets.ts          # GET/POST/DELETE /api/secrets
       auth/
         device.ts         # POST /api/auth/device (start session)
         device.$sessionId.ts  # GET /api/auth/device/:id (poll)
@@ -70,6 +72,7 @@ src/
       device.ts           # generateUserCode(), generateApiKey(), hashApiKey()
     runner/
       index.ts            # RunnerClient - HTTP client for Runner service
+    crypto.ts             # AES-256-GCM encryption for secrets
     utils.ts              # cn() helper for className merging
 drizzle/                  # Migration files
 ```
@@ -101,6 +104,12 @@ GET    /api/agents/:slug        → Get single agent
 DELETE /api/agents/:slug        → Delete agent
 POST   /api/agents/:slug/invoke → Invoke agent (proxy to Runner)
 POST   /api/agents/:slug/stop   → Stop agent
+GET    /api/agents/:slug/logs   → Get agent logs (supports ?follow=true for SSE streaming)
+
+# Secrets
+GET    /api/secrets             → List secrets (optional ?agent=slug filter)
+POST   /api/secrets             → Create/update secret
+DELETE /api/secrets             → Delete secret (?name=KEY&agent=slug)
 
 # Device Auth (CLI login)
 POST   /api/auth/device              → Start device auth session
@@ -109,7 +118,7 @@ POST   /api/auth/device/:id/approve  → Approve session (browser)
 GET    /api/auth/device/lookup       → Lookup session by user code
 ```
 
-All agent routes require `Authorization: Bearer ok_xxxxx` header.
+All agent and secrets routes require `Authorization: Bearer ok_xxxxx` header.
 
 ## Database Schema
 
@@ -127,4 +136,5 @@ DATABASE_URL=postgres://...
 BETTER_AUTH_SECRET=...
 RUNNER_URL=http://localhost:8000
 PLATFORM_URL=http://localhost:3000
+ENCRYPTION_KEY=...                   # 32-byte key for secrets encryption (64 hex chars)
 ```

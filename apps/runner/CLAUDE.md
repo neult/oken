@@ -71,21 +71,22 @@ Configuration is in `src/oken_runner/logging.py`. Standard library logging (incl
 Platform sends commands to Runner:
 
 ```
-POST /deploy       → Receive tarball, build Docker image, start container
+POST /deploy       → Receive tarball + secrets, build Docker image, start container
 POST /invoke/{id}  → Proxy request to running agent container
 POST /stop/{id}    → Stop agent container
+GET  /logs/{id}    → Get container logs (supports ?follow=true for SSE streaming)
 GET  /agents       → List all running agents
 GET  /health       → Health check
 ```
 
 ## Agent Execution Flow
 
-1. Platform POSTs tarball to `/deploy` with `agent_id`
+1. Platform POSTs tarball to `/deploy` with `agent_id` and optional `secrets`
 2. Runner extracts to `$DATA_DIR/agents/<id>/`
 3. Runner parses `oken.toml` for agent config
 4. Runner auto-detects entrypoint type (handler/class/http)
 5. Runner builds Docker image with uv for dependencies
-6. Runner starts container on `oken-agents` bridge network
+6. Runner starts container on `oken-agents` bridge network with secrets as env vars
 7. Runner waits for health check, then returns success
 8. Runner proxies `/invoke` requests to container
 

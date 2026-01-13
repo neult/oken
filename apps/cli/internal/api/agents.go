@@ -201,3 +201,25 @@ func (c *Client) InvokeAgent(slug string, input map[string]any) (*InvokeResponse
 	}
 	return &resp, nil
 }
+
+// LogsResponse is returned when fetching agent logs
+type LogsResponse struct {
+	Logs string `json:"logs"`
+}
+
+// GetAgentLogs fetches logs from a running agent
+func (c *Client) GetAgentLogs(slug string, tail int) (*LogsResponse, error) {
+	if err := validateSlug(slug); err != nil {
+		return nil, err
+	}
+	var resp LogsResponse
+	if err := c.Get(fmt.Sprintf("/api/agents/%s/logs?tail=%d", slug, tail), &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetAgentLogsStreamURL returns the URL for streaming logs
+func (c *Client) GetAgentLogsStreamURL(slug string, tail int) string {
+	return fmt.Sprintf("%s/api/agents/%s/logs?follow=true&tail=%d", c.BaseURL, slug, tail)
+}

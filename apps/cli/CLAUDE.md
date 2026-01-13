@@ -32,13 +32,14 @@ cmd/
   stop.go      # oken stop <agent>
   delete.go    # oken delete <agent>
   invoke.go    # oken invoke <agent>
-  logs.go      # oken logs <agent> (stub)
-  secrets.go   # oken secrets set/list (stub)
+  logs.go      # oken logs <agent> [-f] - view/stream logs
+  secrets.go   # oken secrets set/list/delete - manage secrets
 internal/
   api/
     client.go  # HTTP client with auth
     auth.go    # Device auth API calls
-    agents.go  # Agent CRUD operations
+    agents.go  # Agent CRUD operations + logs
+    secrets.go # Secrets CRUD operations
   config/
     config.go  # Load/save ~/.oken/config.json
   pack/
@@ -60,7 +61,8 @@ oken status     → GET /api/agents/:slug
 oken stop       → POST /api/agents/:slug/stop
 oken delete     → DELETE /api/agents/:slug
 oken invoke     → POST /api/agents/:slug/invoke
-oken secrets    → POST/GET /api/secrets
+oken logs       → GET /api/agents/:slug/logs
+oken secrets    → GET/POST/DELETE /api/secrets
 ```
 
 The `internal/api/client.go` handles all HTTP calls to Platform.
