@@ -2,15 +2,21 @@
 
 Go CLI for deploying and managing agents.
 
+## Important
+
+- **ALWAYS use task commands from repo root.** Never use `go` directly if it's defined in `Taskfile.yml`.
+
 ## Commands
 
 ```bash
-go run .               # Run CLI
-go build -o oken .     # Build binary
-
 # From repo root:
-task dev:cli
-task build:cli
+task dev:cli           # Run CLI
+task build:cli         # Build binary to apps/cli/oken
+task lint:cli          # Lint with golangci-lint
+task format:cli        # Format with gofmt
+task check:cli         # Lint + format check
+task test:cli          # Run tests
+task test:cli:cov      # Run tests with coverage
 ```
 
 ## Structure
@@ -18,15 +24,27 @@ task build:cli
 ```
 cmd/
   root.go      # Root command, Execute()
+  login.go     # oken login - device auth flow
   init.go      # oken init
   deploy.go    # oken deploy
-  logs.go      # oken logs <agent>
-  secrets.go   # oken secrets set/list
-  login.go     # oken login
+  list.go      # oken list
+  status.go    # oken status <agent>
+  stop.go      # oken stop <agent>
+  delete.go    # oken delete <agent>
+  invoke.go    # oken invoke <agent>
+  logs.go      # oken logs <agent> (stub)
+  secrets.go   # oken secrets set/list (stub)
 internal/
-  api/         # HTTP client for Platform REST API
-  config/      # CLI config (~/.oken)
-  pack/        # Tarball creation
+  api/
+    client.go  # HTTP client with auth
+    auth.go    # Device auth API calls
+    agents.go  # Agent CRUD operations
+  config/
+    config.go  # Load/save ~/.oken/config.json
+  pack/
+    pack.go    # Tarball creation
+  ui/
+    ui.go      # Colored terminal output
 ```
 
 ## How CLI Talks to Platform
@@ -34,20 +52,31 @@ internal/
 CLI never talks to Runner directly. All requests go through Platform:
 
 ```
-oken deploy     → POST /api/agents (sends tarball)
-oken logs       → GET /api/agents/:id/logs
+oken login      → POST /api/auth/device (start)
+                → GET /api/auth/device/:id (poll)
+oken deploy     → POST /api/agents (multipart with tarball)
+oken list       → GET /api/agents
+oken status     → GET /api/agents/:slug
+oken stop       → POST /api/agents/:slug/stop
+oken delete     → DELETE /api/agents/:slug
+oken invoke     → POST /api/agents/:slug/invoke
 oken secrets    → POST/GET /api/secrets
-oken login      → POST /api/auth/*
 ```
 
 The `internal/api/client.go` handles all HTTP calls to Platform.
 
-## Argument Validation
+## Config
 
-```go
-Args: cobra.ExactArgs(1),      // Exactly 1 arg
-Args: cobra.MinimumNArgs(1),   // At least 1 arg
-Args: cobra.NoArgs,            // No args allowed
+`~/.oken/config.json` stores auth and settings:
+
+```json
+{
+  "endpoint": "http://localhost:3000",
+  "token": "ok_xxxxx",
+  "user": {
+    "email": "user@example.com"
+  }
+}
 ```
 
 ## Adding a New Command
@@ -55,16 +84,23 @@ Args: cobra.NoArgs,            // No args allowed
 1. Create `cmd/<name>.go`
 2. Define command with `&cobra.Command{}`
 3. Add to root in `init()`: `rootCmd.AddCommand(newCmd)`
+4. If it needs auth, load config and create API client:
+   ```go
+   cfg, _ := config.Load()
+   client := api.NewClient(cfg.Endpoint, cfg.Token)
+   ```
+
+## Argument Validation
+
+```go
+Args: cobra.NoArgs,            // No args allowed
+Args: cobra.ExactArgs(1),      // Exactly 1 arg
+Args: cobra.MinimumNArgs(1),   // At least 1 arg
+```
 
 ## Testing
 
 ```bash
-go test ./...              # Run all tests
-go test ./cmd              # Test cmd package
-go test -v ./...           # Verbose output
-go test -run TestDeploy    # Run specific test
+task test:cli                  # Run all tests
+task test:cli:cov              # With coverage
 ```
-
-## Config
-
-`~/.oken/config.json` - stores auth token and platform endpoint
