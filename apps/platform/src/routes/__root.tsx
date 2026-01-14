@@ -1,14 +1,22 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router";
 
-import Header from "../components/Header";
-
+import { ThemeProvider } from "@/components/theme-provider";
+import { getThemeServerFn } from "@/lib/theme";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   notFoundComponent: () => (
-    <div className="p-8 text-center">Page not found</div>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">404</h1>
+        <p className="text-muted-foreground">Page not found</p>
+      </div>
+    </div>
   ),
   head: () => ({
     meta: [
@@ -20,7 +28,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "Oken - AI Agent Deployment Platform",
       },
     ],
     links: [
@@ -30,30 +38,23 @@ export const Route = createRootRoute({
       },
     ],
   }),
-
-  shellComponent: RootDocument,
+  loader: () => getThemeServerFn(),
+  component: RootDocument,
 });
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument() {
+  const theme = Route.useLoaderData();
+  const initialClass = theme === "system" ? "" : theme;
+
   return (
-    <html lang="en">
+    <html lang="en" className={initialClass} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
-        <Header />
-        {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+      <body className="bg-background text-foreground">
+        <ThemeProvider theme={theme}>
+          <Outlet />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>

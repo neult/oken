@@ -1,14 +1,66 @@
-import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 
+// Better Auth tables
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull().default(""),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .references(() => users.id)
+    .notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const accounts = pgTable("accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .references(() => users.id)
+    .notNull(),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
+  idToken: text("id_token"),
+  password: text("password"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const verifications = pgTable("verifications", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const agents = pgTable("agents", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   status: varchar("status", { length: 50 }).notNull(),
@@ -21,7 +73,7 @@ export const agents = pgTable("agents", {
 
 export const secrets = pgTable("secrets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   agentId: uuid("agent_id").references(() => agents.id),
   name: varchar("name", { length: 255 }).notNull(),
   value: text("value").notNull(),
@@ -42,7 +94,7 @@ export const deviceAuthSessions = pgTable("device_auth_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userCode: varchar("user_code", { length: 16 }).notNull().unique(),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
-  userId: uuid("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -50,7 +102,7 @@ export const deviceAuthSessions = pgTable("device_auth_sessions", {
 // API keys for CLI authentication
 export const apiKeys = pgTable("api_keys", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id)
     .notNull(),
   name: varchar("name", { length: 255 }).notNull(),

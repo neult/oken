@@ -61,13 +61,13 @@ function DeviceAuthPage() {
 
   if (!code) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-white">Invalid Request</CardTitle>
+            <CardTitle>Invalid Request</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               No authorization code provided. Please use the link from your CLI.
             </p>
           </CardContent>
@@ -78,13 +78,13 @@ function DeviceAuthPage() {
 
   if (status === "success") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-white">CLI Authorized</CardTitle>
+            <CardTitle>CLI Authorized</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               You can close this window and return to your terminal.
             </p>
           </CardContent>
@@ -94,32 +94,32 @@ function DeviceAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-white">Authorize CLI</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle>Authorize CLI</CardTitle>
+          <CardDescription>
             A CLI is requesting access to your Oken account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="font-mono text-xl text-center p-4 bg-slate-900 rounded-lg text-cyan-400 tracking-wider">
+          <div className="font-mono text-xl text-center p-4 bg-muted rounded-lg text-primary tracking-wider">
             {code}
           </div>
           {status === "error" && (
-            <p className="text-red-400 mt-4 text-sm">{error}</p>
+            <p className="text-destructive mt-4 text-sm">{error}</p>
           )}
         </CardContent>
         <CardFooter className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1 border-slate-600 text-gray-300 hover:bg-slate-700"
+            className="flex-1"
             onClick={() => window.close()}
           >
             Cancel
           </Button>
           <Button
-            className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white"
+            className="flex-1"
             onClick={handleApprove}
             disabled={status === "loading"}
           >
